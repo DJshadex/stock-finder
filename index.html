@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Product Zoeken</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f6f9; padding: 20px; margin:0; }
+    h1 { text-align: center; margin-bottom: 20px; }
+    .container { max-width: 700px; margin:auto; }
+    input, select { padding: 12px; font-size:16px; margin-bottom:10px; border-radius:6px; border:1px solid #ccc; width: calc(100% - 24px); }
+    button { padding: 10px 14px; border-radius:6px; border:none; cursor:pointer; font-weight:bold; }
+    .search-btn { width:100%; background:#007bff; color:white; margin-bottom:20px; }
+    .result { background:white; padding:15px; border-radius:10px; margin-bottom:15px; box-shadow:0 2px 6px rgba(0,0,0,0.08);}
+    .store-name { font-weight:bold; margin-top:5px; }
+    .actions { margin-top:10px; }
+    .actions button { margin-right:10px; margin-top:5px; }
+    .website-btn { background:#28a745; color:white; }
+    .route-btn { background:#ff9800; color:white; }
+    .loading { text-align:center; margin-top:20px; }
+    .filter-row { display:flex; justify-content:flex-end; margin-bottom:10px; align-items:center; gap:10px; }
+    .filter-row select { width:150px; margin:0; }
+    #locatieStatus { text-align:right; font-size:12px; color:#555; margin-bottom:5px; }
+  </style>
+</head>
+
+<body>
+<div class="container">
+  <h1>Zoek een product</h1>
+
+  <div id="locatieStatus">Locatie ophalen...</div>
+
+  <div class="filter-row">
+    <label for="afstandSelect">Afstand filter:</label>
+    <select id="afstandSelect">
+      <option value="0">0 km</option>
+      <option value="5">5 km</option>
+      <option value="10">10 km</option>
+      <option value="15">15 km</option>
+      <option value="30">30 km</option>
+      <option value="50">50 km</option>
+    </select>
+  </div>
+
+  <input type="text" id="zoekInput" placeholder="Bijv. HDMI kabel..." />
+  <button class="search-btn" id="zoekBtn">Zoeken</button>
+
+  <div id="resultaten"></div>
+</div>
+
+<script>
+  // ✅ Frontend = ANON key (NOOIT service_role)
+  const SUPABASE_URL = "https://xqhxvlfuariwoethorke.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxaHh2bGZ1YXJpd29ldGhvcmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MjA4OTksImV4cCI6MjA4NzA5Njg5OX0.fndfzXslGlOoyn3fomGx-6u3vAVakMGhoR87Op8tLHk";
+
+  const { createClient } = supabase;
+  const client = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // Locatie
+  let userLat = null;
+  let userLon = null;
+  let locatieOpgevraagd = false;
+
+  // Debounce + request guard
+  let searchDebounceTimer = null;
+  let lastRequestId = 0;
+
+  function berekenAfstand(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2-lat1) * Math.PI/180;
+    const dLon = (lon2-lon1) * Math.PI/180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
+  function haalLocatieOp(callback) {
+    if (locatieOpgevraagd) { callback(); return; }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((positie) => {
+        userLat = positie.coords.latitude;
+        userLon = positie.coords.longitude;
+        locatieOpgevraagd = true;
+        document.getElementById("locatieStatus").innerText = "Locatie opgehaald!";
+        callback();
+      }, (err) => {
+        console.error("Locatie fout:", err);
+        document.getElementById("locatieStatus").innerText = "Locatie niet beschikbaar";
+        locatieOpgevraagd = true;
+        callback();
+      });
+    } else {
+      document.getElementById("locatieStatus").innerText = "Geolocatie niet ondersteund";
+      locatieOpgevraagd = true;
+      callback();
+    }
+  }
+
+  window.addEventListener("load", () => {
+    haalLocatieOp(() => {});
+  });
+
+  async function zoekProductCore() {
+    const zoekterm = document.getElementById("zoekInput").value.trim();
+    const resultatenDiv = document.getElementById("resultaten");
+    const afstandFilter = parseFloat(document.getElementById("afstandSelect").value);
+
+    if (!zoekterm) { resultatenDiv.innerHTML = ""; return; }
+    resultatenDiv.innerHTML = "<div class='loading'>Zoeken...</div>";
+
+    const requestId = ++lastRequestId;
+
+    try {
+      // ✅ Nieuwe schema-namen:
+      // producten(product_ean, product_naam) -> voorraad(aantal) -> filialen(...) -> winkels(winkel_naam, website_url)
+      const { data, error } = await client
+        .from("producten")
+        .select(`
+          product_ean,
+          product_naam,
+          voorraad (
+            aantal,
+            filialen (
+              filiaal_id,
+              filiaal_naam,
+              stad,
+              adres,
+              lat,
+              lon,
+              winkels (
+                winkel_id,
+                winkel_naam,
+                website_url
+              )
+            )
+          )
+        `)
+        .ilike("product_naam", `%${zoekterm}%`);
+
+      if (requestId !== lastRequestId) return;
+      if (error) throw error;
+
+      resultatenDiv.innerHTML = "";
+
+      if (!data || data.length === 0) {
+        resultatenDiv.innerHTML = "<div class='loading'>Geen resultaten gevonden.</div>";
+        return;
+      }
+
+      const resultatenLijst = [];
+
+      data.forEach(product => {
+        (product.voorraad || []).forEach(item => {
+          const filiaal = item.filialen;
+          if (!filiaal) return;
+
+          const winkel = filiaal.winkels;
+
+          // Alleen voorraad > 0
+          if (!(item.aantal > 0)) return;
+
+          // Afstand berekenen
+          let afstand = null;
+          if (userLat !== null && userLon !== null && filiaal.lat != null && filiaal.lon != null) {
+            afstand = berekenAfstand(userLat, userLon, filiaal.lat, filiaal.lon);
+          }
+
+          // Filter op afstand
+          if (afstandFilter !== 0) {
+            if (afstand === null) return;
+            if (afstand > afstandFilter) return;
+          }
+
+          // ✅ AANGEPAST: alleen filiaalnaam tonen, fallback naar winkel_naam
+          const displayNaam =
+            (filiaal.filiaal_naam && filiaal.filiaal_naam.trim() !== "")
+              ? filiaal.filiaal_naam
+              : (winkel?.winkel_naam || "Onbekende winkel");
+
+
+          // ✅ AANGEPAST: mapsQuery gebruikt winkelnaam indien mogelijk (en anders displayNaam)
+          const mapsNaam = winkel?.winkel_naam || displayNaam;
+          const mapsQuery = encodeURIComponent(`${mapsNaam} ${filiaal.adres || ""}`.trim());
+
+          const html = `
+            <div><strong>${product.product_naam || product.product_ean}</strong></div>
+            <div class="store-name">
+              ${displayNaam}
+              ${afstand !== null ? `(${afstand.toFixed(1)} km)` : ''}
+            </div>
+            <div>Op voorraad: ${item.aantal}</div>
+            <div class="actions">
+              ${winkel && winkel.website_url
+                ? `<button class="website-btn" onclick="window.open('${winkel.website_url}', '_blank')">Website</button>`
+                : ''
+              }
+              ${filiaal.adres
+                ? `<button class="route-btn" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${mapsQuery}', '_blank')">Route</button>`
+                : ''
+              }
+            </div>
+          `;
+
+          resultatenLijst.push({
+            afstand: (afstand !== null ? afstand : Number.POSITIVE_INFINITY),
+            html
+          });
+        });
+      });
+
+      resultatenLijst.sort((a, b) => a.afstand - b.afstand);
+
+      if (resultatenLijst.length === 0) {
+        resultatenDiv.innerHTML = "<div class='loading'>Geen winkels binnen de gekozen afstand gevonden.</div>";
+        return;
+      }
+
+      resultatenLijst.forEach(r => {
+        const div = document.createElement("div");
+        div.className = "result";
+        div.innerHTML = r.html;
+        resultatenDiv.appendChild(div);
+      });
+
+    } catch (err) {
+      console.error(err);
+      // Heel vaak is dit RLS: “permission denied” / “row violates row-level security”
+      resultatenDiv.innerHTML = "<div class='loading'>Er is een fout opgetreden. Check console (F12) voor details.</div>";
+    }
+  }
+
+  function zoekProductLive() {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+      haalLocatieOp(() => { zoekProductCore(); });
+    }, 250);
+  }
+
+  function zoekProductDirect() {
+    clearTimeout(searchDebounceTimer);
+    haalLocatieOp(() => { zoekProductCore(); });
+  }
+
+  const zoekInput = document.getElementById("zoekInput");
+  const zoekBtn = document.getElementById("zoekBtn");
+
+  zoekInput.addEventListener("input", () => zoekProductLive());
+  zoekInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      zoekProductDirect();
+    }
+  });
+  zoekBtn.addEventListener("click", () => zoekProductDirect());
+
+  document.getElementById("afstandSelect").addEventListener("change", () => {
+    if (zoekInput.value.trim()) zoekProductDirect();
+  });
+</script>
+
+</body>
+</html>
