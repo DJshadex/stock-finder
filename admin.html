@@ -93,6 +93,25 @@
         <h2>Welkom, admin 👋</h2>
         <p>Je bent succesvol ingelogd als:</p>
         <strong id="userEmail"></strong>
+        
+        <hr style="border:0;border-top:1px solid #21304d;margin:18px 0;">
+
+<h3 style="margin:0 0 10px 0;">Filialen beheren</h3>
+
+<div style="margin-bottom:10px;">
+  <label class="muted">Kies winkel</label>
+  <select id="winkelSelect" style="width:100%; padding:12px; border-radius:10px; border:1px solid #2a3a5f; background:#0f1626; color:white;">
+    <option value="">Laden…</option>
+  </select>
+</div>
+
+<div id="filialenStatus" class="muted" style="margin-bottom:10px;"></div>
+<div id="filialenList"></div>
+
+<div style="display:flex; gap:10px; margin-top:12px;">
+  <button id="prevPageBtn" class="logout" style="background:#223154;">Vorige</button>
+  <button id="nextPageBtn" class="logout" style="background:#223154;">Volgende</button>
+</div>
 
         <button class="logout" id="logoutBtn">Uitloggen</button>
       </div>
@@ -177,6 +196,180 @@
     if (session && session.user.email === ALLOWED_EMAIL) {
       showAdmin(session.user.email);
     }
+    
+    // ===== Filialen beheer (winkel dropdown + paginatie + delete) =====
+let currentWinkelId = null;
+let page = 0;
+const PAGE_SIZE = 10;
+
+const winkelSelect = document.getElementById("winkelSelect");
+const filialenStatus = document.getElementById("filialenStatus");
+const filialenList = document.getElementById("filialenList");
+const prevPageBtn = document.getElementById("prevPageBtn");
+const nextPageBtn = document.getElementById("nextPageBtn");
+
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+async function laadWinkels() {
+  winkelSelect.innerHTML = `<option value="">Laden…</option>`;
+
+  const { data, error } = await supabase
+    .from("winkels")
+    .select("winkel_id, winkel_naam")
+    .order("winkel_naam", { ascending: true });
+
+  if (error) {
+    winkelSelect.innerHTML = `<option value="">Fout: ${escapeHtml(error.message)}</option>`;
+    return;
+  }
+
+  winkelSelect.innerHTML = `<option value="">— kies een winkel —</option>` +
+    data.map(w => `<option value="${w.winkel_id}">${escapeHtml(w.winkel_naam)}</option>`).join("");
+
+  // Optioneel: auto-select eerste winkel
+  if (data.length > 0) {
+    winkelSelect.value = String(data[0].winkel_id);
+    currentWinkelId = data[0].winkel_id;
+    page = 0;
+    await laadFilialen();
+  }
+}
+
+async function laadFilialen() {
+  filialenList.innerHTML = "";
+  if (!currentWinkelId) {
+    filialenStatus.textContent = "Kies eerst een winkel.";
+    prevPageBtn.disabled = true;
+    nextPageBtn.disabled = true;
+    return;
+  }
+
+  filialenStatus.textContent = "Laden…";
+
+  const from = page * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  // Filialen voor geselecteerde winkel
+  const { data, error } = await supabase
+    .from("filialen")
+    .select("filiaal_id, filiaal_naam, stad, adres")
+    .eq("winkel_id", currentWinkelId)
+    .order("filiaal_id", { ascending: true })
+    .range(from, to);
+
+  if (error) {
+    filialenStatus.textContent = "Fout bij laden filialen: " + error.message;
+    prevPageBtn.disabled = page === 0;
+    nextPageBtn.disabled = true;
+    return;
+  }
+
+  filialenStatus.textContent = `Pagina ${page + 1} (max ${PAGE_SIZE} filialen)`;
+
+  // Knoppen
+  prevPageBtn.disabled = page === 0;
+  // Als minder dan PAGE_SIZE terugkomt, is dit waarschijnlijk de laatste pagina
+  nextPageBtn.disabled = data.length < PAGE_SIZE;
+
+  if (data.length === 0) {
+    filialenList.innerHTML = `<div class="muted">Geen filialen gevonden voor deze winkel.</div>`;
+    return;
+  }
+
+  data.forEach((f) => {
+    const div = document.createElement("div");
+    div.style.border = "1px solid #21304d";
+    div.style.background = "#0f1626";
+    div.style.borderRadius = "12px";
+    div.style.padding = "10px";
+    div.style.marginTop = "8px";
+    div.style.display = "flex";
+    div.style.justifyContent = "space-between";
+    div.style.gap = "10px";
+    div.style.alignItems = "center";
+
+    const left = document.createElement("div");
+    left.innerHTML = `
+      <div><strong>${escapeHtml(f.filiaal_naam)}</strong> — ${escapeHtml(f.stad)}</div>
+      <div style="color:#a9b6d6;font-size:13px;">
+        filiaal_id: ${escapeHtml(f.filiaal_id)} · ${escapeHtml(f.adres)}
+      </div>
+    `;
+
+    const btn = document.createElement("button");
+    btn.textContent = "Verwijder";
+    btn.style.width = "auto";
+    btn.style.background = "#ff3b3b";
+    btn.style.padding = "10px 12px";
+    btn.style.borderRadius = "10px";
+
+    btn.addEventListener("click", async () => {
+      const ok = confirm(
+        `Weet je zeker dat je dit filiaal wilt verwijderen?\n\n` +
+        `${f.filiaal_naam} — ${f.stad}\nfiliaal_id: ${f.filiaal_id}\n\n` +
+        `Alle voorraadregels voor dit filiaal worden ook verwijderd.\n` +
+        `Producten blijven bestaan voor andere filialen.`
+      );
+      if (!ok) return;
+
+      btn.disabled = true;
+      btn.textContent = "Bezig…";
+
+      const { error: rpcError } = await supabase.rpc("admin_delete_filiaal", {
+        p_filiaal_id: f.filiaal_id
+      });
+
+      if (rpcError) {
+        alert("Verwijderen mislukt: " + rpcError.message);
+        btn.disabled = false;
+        btn.textContent = "Verwijder";
+        return;
+      }
+
+      // Na delete: pagina opnieuw laden (en als pagina leeg is, 1 pagina terug)
+      const { data: checkData } = await supabase
+        .from("filialen")
+        .select("filiaal_id")
+        .eq("winkel_id", currentWinkelId)
+        .range(page * PAGE_SIZE, page * PAGE_SIZE); // haal 1 item op om te checken
+
+      if (!checkData || checkData.length === 0) {
+        page = Math.max(0, page - 1);
+      }
+
+      await laadFilialen();
+    });
+
+    div.appendChild(left);
+    div.appendChild(btn);
+    filialenList.appendChild(div);
+  });
+}
+
+// Events
+winkelSelect?.addEventListener("change", async () => {
+  currentWinkelId = winkelSelect.value ? Number(winkelSelect.value) : null;
+  page = 0;
+  await laadFilialen();
+});
+
+prevPageBtn?.addEventListener("click", async () => {
+  if (page > 0) page--;
+  await laadFilialen();
+});
+
+nextPageBtn?.addEventListener("click", async () => {
+  page++;
+  await laadFilialen();
+});
+    
   </script>
 </body>
 </html>
