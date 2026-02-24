@@ -430,9 +430,9 @@
 
   async function loadFilialen() {
     const { data, error } = await supabase
-      .from("winkels")
-      .select("id, winkel_naam")
-      .order("winkel_naam", { ascending: true });
+      .from("filialen")
+      .select("filiaal_naam")
+      .order("filiaal_naam", { ascending: true });
 
     if (error) {
       console.error(error);
@@ -443,7 +443,7 @@
     filiaalOptions.innerHTML = "";
 
     (data || []).forEach(w => {
-      const name = (w.winkel_naam || "").trim();
+      const name = (w.filiaal_naam || "").trim();
       if (!name) return;
       winkelNameToId.set(name, w.id);
 
@@ -467,10 +467,10 @@
     submitBtn.disabled = true;
 
     try {
-      const winkelNaam = (filiaalSearch.value || "").trim();
+      const filiaal_Naam = (filiaalSearch.value || "").trim();
       const winkelId = winkelNameToId.get(winkelNaam) ?? null;
 
-      if (!winkelNaam) {
+      if (!filiaalNaam) {
         requestMsg.textContent = "Kies een filiaal.";
         submitBtn.disabled = false;
         return;
@@ -490,7 +490,7 @@
         .from("insight_requests")
         .insert([{
           winkel_id: winkelId,
-          winkel_naam: winkelNaam,
+          filiaal_naam: filiaalNaam,
           aanvraag_email: email,
           aanvraag_tel: tel
         }]);
