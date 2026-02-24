@@ -193,3 +193,27 @@
   </script>
 </body>
 </html>
+
+<script>
+  // Toon JS errors op het scherm (handig op mobiel)
+  window.addEventListener("error", (e) => {
+    const el = document.getElementById("loginMsg");
+    if (el) {
+      el.classList.remove("hidden");
+      el.textContent = "JS error: " + (e.message || e.error || "onbekend");
+    } else {
+      alert("JS error: " + (e.message || "onbekend"));
+    }
+  });
+
+  window.addEventListener("unhandledrejection", (e) => {
+    const el = document.getElementById("loginMsg");
+    const msg = (e.reason && e.reason.message) ? e.reason.message : String(e.reason || "onbekend");
+    if (el) {
+      el.classList.remove("hidden");
+      el.textContent = "Promise error: " + msg;
+    } else {
+      alert("Promise error: " + msg);
+    }
+  });
+</script>
