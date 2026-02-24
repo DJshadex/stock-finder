@@ -4,229 +4,179 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Stock Finder — Admin</title>
+
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin:0; background:#0b0f19; color:#e8eefc; }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 20px; }
-    .card { background:#121a2a; border:1px solid #21304d; border-radius: 14px; padding: 16px; }
-    .row { display:flex; gap:12px; flex-wrap: wrap; align-items:flex-start; }
-    .col { flex:1 1 320px; }
-    .muted { color:#a9b6d6; font-size: 14px; }
-    h1 { margin: 0 0 6px 0; font-size: 20px; }
-    h2 { margin: 0 0 8px 0; font-size: 16px; }
-    input, button { border-radius: 10px; border:1px solid #2a3a5f; padding: 10px 12px; font-size: 14px; }
-    input { width: 100%; background:#0f1626; color:#e8eefc; }
-    button { background:#2b6cff; color:white; border:none; cursor:pointer; }
-    button.secondary { background:#223154; }
-    .error { color:#ffb4b4; margin-top:10px; white-space: pre-wrap; }
-    .ok { color:#b7ffbf; margin-top:10px; white-space: pre-wrap; }
-    .hidden { display:none; }
-    .topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
-    code { background:#0f1626; border:1px solid #21304d; padding:2px 6px; border-radius:8px; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      margin: 0;
+      background: #0b0f19;
+      color: #e8eefc;
+    }
+
+    .wrap {
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: #121a2a;
+      border: 1px solid #21304d;
+      border-radius: 14px;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 6px;
+      margin-bottom: 14px;
+      border-radius: 10px;
+      border: 1px solid #2a3a5f;
+      background: #0f1626;
+      color: white;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: #2b6cff;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .logout {
+      background: #223154;
+      margin-top: 15px;
+    }
+
+    .error {
+      color: #ffb4b4;
+      margin-top: 10px;
+    }
+
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
+
 <body>
   <div class="wrap">
-    <div class="card" style="margin-bottom:12px;">
-      <div class="topbar">
-        <div>
-          <h1>Admin</h1>
-          <div class="muted">Beveiligd via Supabase Auth (alleen jouw account).</div>
-        </div>
-        <div class="muted">Project: <code>xqhxvlfuariwoethorke</code></div>
-      </div>
-    </div>
+    <div class="card">
 
-    <!-- LOGIN -->
-    <div id="loginCard" class="card">
-      <h2>Inloggen</h2>
-      <div class="muted" style="margin-bottom:10px;">Gebruik je admin e-mail en wachtwoord.</div>
+      <h1>Admin Login</h1>
 
-      <label class="muted">E-mail</label>
-      <input id="email" placeholder="jij@voorbeeld.nl" autocomplete="email" />
+      <!-- Login Form -->
+      <div id="loginSection">
+        <label>Email</label>
+        <input id="email" type="email" placeholder="webmailborre@gmail.com" />
 
-      <div style="height:8px;"></div>
+        <label>Wachtwoord</label>
+        <input id="password" type="password" placeholder="••••••••" />
 
-      <label class="muted">Wachtwoord</label>
-      <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
+        <button id="loginBtn">Inloggen</button>
 
-      <div style="height:12px;"></div>
-
-      <button id="loginBtn" style="width:100%;">Inloggen</button>
-
-      <div id="loginMsg" class="error hidden"></div>
-    </div>
-
-    <!-- ADMIN -->
-    <div id="adminCard" class="card hidden">
-      <div class="topbar">
-        <div>
-          <h2>Dashboard</h2>
-          <div class="muted">Ingelogd als: <span id="who"></span></div>
-        </div>
-        <button id="logoutBtn" class="secondary">Uitloggen</button>
+        <div id="errorMsg" class="error hidden"></div>
       </div>
 
-      <div style="height:12px;"></div>
+      <!-- Dashboard -->
+      <div id="adminSection" class="hidden">
+        <h2>Welkom, admin 👋</h2>
+        <p>Je bent succesvol ingelogd als:</p>
+        <strong id="userEmail"></strong>
 
-      <div class="row">
-        <button class="secondary" id="syncBtn">Sync nu starten (later)</button>
-        <button class="secondary" id="logsBtn">Logs (later)</button>
+        <button class="logout" id="logoutBtn">Uitloggen</button>
       </div>
 
-      <div id="adminMsg" class="ok hidden"></div>
-
-      <div style="height:12px;"></div>
-      <div class="muted">
-        Tip: zet dit bestand eerst op je <code>test-versie</code> branch, test het, en merge daarna naar <code>main</code>.
-      </div>
     </div>
   </div>
 
-  <!-- Supabase JS (UMD build) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    // ✅ jouw project gegevens (zoals jij ze stuurde)
+  <!-- Supabase via ES module -->
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
     const SUPABASE_URL = "https://xqhxvlfuariwoethorke.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxaHh2bGZ1YXJpd29ldGhvcmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MjA4OTksImV4cCI6MjA4NzA5Njg5OX0.fndfzXslGlOoyn3fomGx-6u3vAVakMGhoR87Op8tLHk";
 
-    // 🚨 VUL DIT IN: alleen dit e-mailadres mag admin zijn
     const ALLOWED_EMAIL = "webmailborre@gmail.com";
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const loginCard = document.getElementById("loginCard");
-    const adminCard = document.getElementById("adminCard");
-    const loginMsg = document.getElementById("loginMsg");
-    const adminMsg = document.getElementById("adminMsg");
-    const who = document.getElementById("who");
+    const loginSection = document.getElementById("loginSection");
+    const adminSection = document.getElementById("adminSection");
+    const errorMsg = document.getElementById("errorMsg");
+    const userEmail = document.getElementById("userEmail");
 
-    function show(el) { el.classList.remove("hidden"); }
-    function hide(el) { el.classList.add("hidden"); }
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
 
-    function setLoginError(msg) {
-      loginMsg.textContent = msg;
-      show(loginMsg);
-    }
-    function clearLoginError() {
-      loginMsg.textContent = "";
-      hide(loginMsg);
-    }
-    function setAdminOk(msg) {
-      adminMsg.textContent = msg;
-      show(adminMsg);
-      setTimeout(() => hide(adminMsg), 4000);
+    function showError(message) {
+      errorMsg.textContent = message;
+      errorMsg.classList.remove("hidden");
     }
 
-    async function enforceOnlyMe(session) {
-      const email = session?.user?.email || "";
-      if (!email) {
-        throw new Error("Geen sessie.");
-      }
-      if (email.toLowerCase() !== ALLOWED_EMAIL.toLowerCase()) {
-        // Niet jij -> meteen uitloggen
-        await supabase.auth.signOut();
-        throw new Error("Geen toegang tot admin.");
-      }
-      return email;
+    function hideError() {
+      errorMsg.classList.add("hidden");
+      errorMsg.textContent = "";
     }
 
-    async function render() {
-      clearLoginError();
-      hide(adminMsg);
-
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        show(loginCard);
-        hide(adminCard);
-        return;
-      }
-
-      try {
-        const email = await enforceOnlyMe(session);
-        who.textContent = email;
-        hide(loginCard);
-        show(adminCard);
-      } catch (e) {
-        show(loginCard);
-        hide(adminCard);
-        setLoginError(e.message || String(e));
-      }
+    function showAdmin(email) {
+      loginSection.classList.add("hidden");
+      adminSection.classList.remove("hidden");
+      userEmail.textContent = email;
     }
 
-    document.getElementById("loginBtn").addEventListener("click", async () => {
-      clearLoginError();
+    function showLogin() {
+      loginSection.classList.remove("hidden");
+      adminSection.classList.add("hidden");
+    }
+
+    // Login
+    loginBtn.addEventListener("click", async () => {
+      hideError();
 
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
 
-      if (!ALLOWED_EMAIL || ALLOWED_EMAIL.includes("VUL_HIER")) {
-        return setLoginError("Vul eerst ALLOWED_EMAIL in in admin.html (jouw e-mailadres).");
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        showError(error.message);
+        return;
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return setLoginError(error.message);
-
-      try {
-        await enforceOnlyMe(data.session);
-        await render();
-      } catch (e) {
-        setLoginError(e.message || String(e));
+      if (data.user.email !== ALLOWED_EMAIL) {
+        await supabase.auth.signOut();
+        showError("Geen toegang tot admin.");
+        return;
       }
+
+      showAdmin(data.user.email);
     });
 
-    document.getElementById("logoutBtn").addEventListener("click", async () => {
+    // Logout
+    logoutBtn.addEventListener("click", async () => {
       await supabase.auth.signOut();
-      await render();
+      showLogin();
     });
 
-    // (Later) knoppen
-    document.getElementById("syncBtn").addEventListener("click", async () => {
-      setAdminOk("Sync knop komt later (Edge Function / server-side).");
-    });
-    document.getElementById("logsBtn").addEventListener("click", async () => {
-      setAdminOk("Logs scherm komt later.");
-    });
-
-    supabase.auth.onAuthStateChange(() => render());
-    render();
+    // Check session on load
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session && session.user.email === ALLOWED_EMAIL) {
+      showAdmin(session.user.email);
+    }
   </script>
-  
-  <script>
-  // Toon JS errors op het scherm (handig op mobiel)
-  window.addEventListener("error", (e) => {
-    const el = document.getElementById("loginMsg");
-    if (el) {
-      el.classList.remove("hidden");
-      el.textContent = "JS error: " + (e.message || e.error || "onbekend");
-    } else {
-      alert("JS error: " + (e.message || "onbekend"));
-    }
-  });
-
-  window.addEventListener("unhandledrejection", (e) => {
-    const el = document.getElementById("loginMsg");
-    const msg = (e.reason && e.reason.message) ? e.reason.message : String(e.reason || "onbekend");
-    if (el) {
-      el.classList.remove("hidden");
-      el.textContent = "Promise error: " + msg;
-    } else {
-      alert("Promise error: " + msg);
-    }
-  });
-</script>
-
 </body>
 </html>
-
-<script>
-  // Toon JS errors op het scherm (handig op mobiel)
-  window.addEventListener("error", (e) => {
-    const el = document.getElementById("loginMsg");
-    if (el) {
-      el.classList.remove("hidden");
-      el.textContent = "JS error: " + (e.message || e.error || "onbekend");
-    } else {
-      alert("JS error: " + (e.message || "onbekend"));
-    }
-  });
