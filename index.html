@@ -23,75 +23,93 @@
     .filter-row { display:flex; justify-content:flex-end; margin-bottom:10px; align-items:center; gap:10px; }
     .filter-row select { width:150px; margin:0; }
     #locatieStatus { text-align:right; font-size:12px; color:#555; margin-bottom:5px; }
+
+    /* --- Hamburger menu + modal (Stock Finder) --- */
+    .sf-hidden { display:none !important; }
+
+    .sf-menu-btn{
+      position: fixed; top: 14px; right: 14px; z-index: 9999;
+      font-size: 22px; padding: 10px 12px; border-radius: 10px;
+      border: 1px solid #ddd; background: #fff;
+      box-shadow: 0 4px 16px rgba(0,0,0,.08);
+    }
+
+    .sf-backdrop{
+      position: fixed; inset: 0; z-index: 9998;
+      background: rgba(0,0,0,.35);
+    }
+
+    .sf-side-menu{
+      position: fixed; top: 0; right: 0; height: 100vh; width: 290px; z-index: 9999;
+      background: #fff; border-left: 1px solid #eee; padding: 12px;
+      box-shadow: -8px 0 30px rgba(0,0,0,.12);
+    }
+
+    .sf-side-menu-header{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 6px 0 14px 0;
+    }
+
+    .sf-menu-item{
+      width: 100%;
+      padding: 12px; border-radius: 10px; border: 1px solid #eee;
+      background: #fafafa; text-align:left; font-size: 16px;
+    }
+
+    .sf-modal{
+      position: fixed; inset: 0; z-index: 10000;
+      display:flex; align-items:center; justify-content:center;
+      padding: 18px;
+    }
+
+    .sf-modal-card{
+      width: 100%; max-width: 520px;
+      background:#fff; border-radius: 14px; border: 1px solid #eee;
+      padding: 14px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.22);
+    }
+
+    .sf-modal-header{
+      display:flex; align-items:center; justify-content:space-between;
+      padding-bottom: 10px; border-bottom: 1px solid #f0f0f0;
+      margin-bottom: 12px;
+    }
+
+    .sf-close-btn{
+      border: 1px solid #eee; background:#fff; border-radius:10px;
+      padding: 6px 10px; font-size: 16px;
+    }
+
+    .sf-form{ display:flex; flex-direction:column; gap: 10px; }
+    .sf-label{ font-size: 14px; font-weight: 600; }
+    .sf-input{
+      width:100%; padding: 12px; border-radius: 10px;
+      border: 1px solid #ddd; font-size: 16px;
+      box-sizing: border-box;
+    }
+    .sf-help{ font-size: 12px; opacity: .75; margin-top: -6px; }
+    .sf-primary{
+      padding: 12px; border-radius: 10px; border: 0;
+      background: #111; color: #fff; font-size: 16px;
+    }
+    .sf-msg{ font-size: 13px; margin-top: 6px; }
+    .sf-msg.ok{ color:#1b7f2a; }
+    .sf-msg.err{ color:#b00020; }
+    .sf-mini{
+      font-size: 12px; opacity:.8; margin-top: 6px; line-height: 1.35;
+    }
   </style>
-  
-  <style>
-  .sf-hidden { display:none; }
-  .sf-menu-btn{
-    position: fixed; top: 14px; right: 14px; z-index: 50;
-    font-size: 22px; padding: 10px 12px; border-radius: 10px;
-    border: 1px solid #ddd; background: #fff;
-  }
-  .sf-side-menu{
-    position: fixed; top: 0; right: 0; height: 100vh; width: 280px; z-index: 60;
-    background: #fff; border-left: 1px solid #eee; padding: 12px;
-    box-shadow: -8px 0 30px rgba(0,0,0,.08);
-  }
-  .sf-side-menu-header{
-    display:flex; align-items:center; justify-content:space-between;
-    padding: 6px 0 14px 0;
-  }
-  .sf-menu-item{
-    width: 100%;
-    padding: 12px; border-radius: 10px; border: 1px solid #eee;
-    background: #fafafa; text-align:left; font-size: 16px;
-  }
-  .sf-backdrop{
-    position: fixed; inset: 0; z-index: 55;
-    background: rgba(0,0,0,.35);
-  }
-  .sf-modal{
-    position: fixed; inset: 0; z-index: 70;
-    display:flex; align-items:center; justify-content:center;
-    padding: 18px;
-  }
-  .sf-modal-card{
-    width: 100%; max-width: 520px;
-    background:#fff; border-radius: 14px; border: 1px solid #eee;
-    padding: 14px;
-    box-shadow: 0 18px 50px rgba(0,0,0,.18);
-  }
-  .sf-modal-header{
-    display:flex; align-items:center; justify-content:space-between;
-    padding-bottom: 10px; border-bottom: 1px solid #f0f0f0;
-    margin-bottom: 12px;
-  }
-  .sf-close-btn{
-    border: 1px solid #eee; background:#fff; border-radius:10px;
-    padding: 6px 10px; font-size: 16px;
-  }
-  .sf-form{ display:flex; flex-direction:column; gap: 10px; }
-  .sf-label{ font-size: 14px; }
-  .sf-input{
-    width:100%; padding: 12px; border-radius: 10px;
-    border: 1px solid #ddd; font-size: 16px;
-  }
-  .sf-help{ font-size: 12px; opacity: .75; margin-top: -6px; }
-  .sf-primary{
-    padding: 12px; border-radius: 10px; border: 0;
-    background: #111; color: #fff; font-size: 16px;
-  }
-  .sf-msg{ font-size: 13px; margin-top: 6px; }
-</style>
-  
 </head>
 
-<!-- Hamburger button -->
-<button id="menuBtn" class="sf-menu-btn" aria-label="Menu">
-  ☰
-</button>
+<body>
 
-<!-- Side menu -->
+<!-- ✅ Hamburger button -->
+<button id="menuBtn" class="sf-menu-btn" aria-label="Menu">☰</button>
+
+<!-- ✅ Backdrop (klik = sluiten) -->
+<div id="backdrop" class="sf-backdrop sf-hidden"></div>
+
+<!-- ✅ Side menu -->
 <div id="sideMenu" class="sf-side-menu sf-hidden">
   <div class="sf-side-menu-header">
     <strong>Menu</strong>
@@ -103,10 +121,7 @@
   </button>
 </div>
 
-<!-- Backdrop -->
-<div id="backdrop" class="sf-backdrop sf-hidden"></div>
-
-<!-- Modal -->
+<!-- ✅ Modal -->
 <div id="insightModal" class="sf-modal sf-hidden" role="dialog" aria-modal="true">
   <div class="sf-modal-card">
     <div class="sf-modal-header">
@@ -116,10 +131,16 @@
 
     <form id="insightForm" class="sf-form">
       <label class="sf-label">Filiaal</label>
-      <!-- Simpele “zoek” zonder veel code: datalist -->
-      <input id="filiaalSearch" class="sf-input" list="filiaalOptions" placeholder="Zoek filiaal..." autocomplete="off" required />
+      <input
+        id="filiaalSearch"
+        class="sf-input"
+        list="filiaalOptions"
+        placeholder="Zoek filiaal..."
+        autocomplete="off"
+        required
+      />
       <datalist id="filiaalOptions"></datalist>
-      <small class="sf-help">Tip: begin te typen, kies uit de lijst.</small>
+      <div class="sf-help">Begin te typen en kies een filiaal uit de lijst.</div>
 
       <label class="sf-label">E-mailadres aanvrager</label>
       <input id="aanvraagEmail" class="sf-input" type="email" placeholder="naam@bedrijf.nl" required />
@@ -132,11 +153,16 @@
       </button>
 
       <div id="requestMsg" class="sf-msg"></div>
+
+      <div class="sf-mini">
+        Let op: dit formulier slaat je aanvraag op in onze database. Automatisch mailen naar
+        <strong>webmailborre@gmail.com</strong> kan pas zodra we een mailservice/edge function toevoegen.
+        Tot die tijd kun je de aanvragen bekijken in Supabase (tabel <code>insight_requests</code>).
+      </div>
     </form>
   </div>
 </div>
 
-<body>
 <div class="container">
   <h1>Zoek een product</h1>
 
@@ -167,6 +193,166 @@
 
   const { createClient } = supabase;
   const client = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ----------------------------
+  // Hamburger menu + modal logic
+  // ----------------------------
+  const menuBtn = document.getElementById("menuBtn");
+  const sideMenu = document.getElementById("sideMenu");
+  const backdrop = document.getElementById("backdrop");
+  const menuCloseBtn = document.getElementById("menuCloseBtn");
+  const openInsightModalBtn = document.getElementById("openInsightModalBtn");
+
+  const insightModal = document.getElementById("insightModal");
+  const modalCloseBtn = document.getElementById("modalCloseBtn");
+
+  function openMenu() {
+    sideMenu.classList.remove("sf-hidden");
+    backdrop.classList.remove("sf-hidden");
+  }
+  function closeMenu() {
+    sideMenu.classList.add("sf-hidden");
+    if (insightModal.classList.contains("sf-hidden")) {
+      backdrop.classList.add("sf-hidden");
+    }
+  }
+  function openModal() {
+    insightModal.classList.remove("sf-hidden");
+    backdrop.classList.remove("sf-hidden");
+  }
+  function closeModal() {
+    insightModal.classList.add("sf-hidden");
+    if (sideMenu.classList.contains("sf-hidden")) {
+      backdrop.classList.add("sf-hidden");
+    }
+  }
+
+  // Menu start altijd dicht (extra safety)
+  closeMenu();
+  closeModal();
+
+  menuBtn.addEventListener("click", () => {
+    if (sideMenu.classList.contains("sf-hidden")) openMenu();
+    else closeMenu();
+  });
+  menuCloseBtn.addEventListener("click", closeMenu);
+
+  openInsightModalBtn.addEventListener("click", () => {
+    closeMenu();
+    openModal();
+  });
+
+  modalCloseBtn.addEventListener("click", closeModal);
+
+  backdrop.addEventListener("click", () => {
+    if (!insightModal.classList.contains("sf-hidden")) closeModal();
+    if (!sideMenu.classList.contains("sf-hidden")) closeMenu();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      if (!insightModal.classList.contains("sf-hidden")) closeModal();
+      if (!sideMenu.classList.contains("sf-hidden")) closeMenu();
+    }
+  });
+
+  // --------------------------------
+  // Filialen laden voor zoek (datalist)
+  // --------------------------------
+  const filiaalSearch = document.getElementById("filiaalSearch");
+  const filiaalOptions = document.getElementById("filiaalOptions");
+
+  // Map: "Winkelnaam" -> winkel_id (bij jou heet de kolom winkel_id)
+  let winkelNameToId = new Map();
+
+  async function loadFilialenForRequest() {
+    // IMPORTANT: jouw tabel heeft (winkel_id, winkel_naam)
+    const { data, error } = await client
+      .from("winkels")
+      .select("winkel_id, winkel_naam")
+      .order("winkel_naam", { ascending: true });
+
+    if (error) {
+      console.error("Filialen laden fout:", error);
+      return;
+    }
+
+    winkelNameToId = new Map();
+    filiaalOptions.innerHTML = "";
+
+    (data || []).forEach(w => {
+      const name = (w.winkel_naam || "").trim();
+      if (!name) return;
+
+      winkelNameToId.set(name, w.winkel_id);
+
+      const opt = document.createElement("option");
+      opt.value = name;
+      filiaalOptions.appendChild(opt);
+    });
+  }
+
+  // Laad filialen meteen
+  loadFilialenForRequest();
+
+  // -------------------------
+  // Aanvraag opslaan in Supabase
+  // -------------------------
+  const insightForm = document.getElementById("insightForm");
+  const requestMsg = document.getElementById("requestMsg");
+  const submitBtn = document.getElementById("submitRequestBtn");
+
+  insightForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    requestMsg.className = "sf-msg";
+    requestMsg.textContent = "";
+    submitBtn.disabled = true;
+
+    try {
+      const winkelNaam = (filiaalSearch.value || "").trim();
+      const winkelId = winkelNameToId.get(winkelNaam) ?? null;
+
+      // Forceer keuze uit lijst (bestaand filiaal)
+      if (!winkelId) {
+        requestMsg.classList.add("err");
+        requestMsg.textContent = "Kies een bestaand filiaal uit de lijst.";
+        submitBtn.disabled = false;
+        return;
+      }
+
+      const email = (document.getElementById("aanvraagEmail").value || "").trim();
+      const tel = (document.getElementById("aanvraagTel").value || "").trim();
+
+      // Sla op in tabel insight_requests
+      // (Zorg dat deze tabel bestaat in Supabase)
+      const { error } = await client
+        .from("insight_requests")
+        .insert([{
+          winkel_id: winkelId,
+          winkel_naam: winkelNaam,
+          aanvraag_email: email,
+          aanvraag_tel: tel
+        }]);
+
+      if (error) throw error;
+
+      requestMsg.classList.add("ok");
+      requestMsg.textContent = "Aanvraag verstuurd ✅ We nemen contact op.";
+      insightForm.reset();
+
+      setTimeout(() => closeModal(), 900);
+    } catch (err) {
+      console.error("Aanvraag versturen fout:", err);
+      requestMsg.classList.add("err");
+      requestMsg.textContent = "Fout bij versturen. Bestaat de tabel 'insight_requests' + RLS insert policy?";
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  // ----------------------------
+  // Locatie / product search code
+  // ----------------------------
 
   // Locatie
   let userLat = null;
@@ -226,8 +412,6 @@
     const requestId = ++lastRequestId;
 
     try {
-      // ✅ Nieuwe schema-namen:
-      // producten(product_ean, product_naam) -> voorraad(aantal) -> filialen(...) -> winkels(winkel_naam, website_url)
       const { data, error } = await client
         .from("producten")
         .select(`
@@ -271,29 +455,23 @@
 
           const winkel = filiaal.winkels;
 
-          // Alleen voorraad > 0
           if (!(item.aantal > 0)) return;
 
-          // Afstand berekenen
           let afstand = null;
           if (userLat !== null && userLon !== null && filiaal.lat != null && filiaal.lon != null) {
             afstand = berekenAfstand(userLat, userLon, filiaal.lat, filiaal.lon);
           }
 
-          // Filter op afstand
           if (afstandFilter !== 0) {
             if (afstand === null) return;
             if (afstand > afstandFilter) return;
           }
 
-          // ✅ AANGEPAST: alleen filiaalnaam tonen, fallback naar winkel_naam
           const displayNaam =
             (filiaal.filiaal_naam && filiaal.filiaal_naam.trim() !== "")
               ? filiaal.filiaal_naam
               : (winkel?.winkel_naam || "Onbekende winkel");
 
-
-          // ✅ AANGEPAST: mapsQuery gebruikt winkelnaam indien mogelijk (en anders displayNaam)
           const mapsNaam = winkel?.winkel_naam || displayNaam;
           const mapsQuery = encodeURIComponent(`${mapsNaam} ${filiaal.adres || ""}`.trim());
 
@@ -339,7 +517,6 @@
 
     } catch (err) {
       console.error(err);
-      // Heel vaak is dit RLS: “permission denied” / “row violates row-level security”
       resultatenDiv.innerHTML = "<div class='loading'>Er is een fout opgetreden. Check console (F12) voor details.</div>";
     }
   }
@@ -370,145 +547,6 @@
 
   document.getElementById("afstandSelect").addEventListener("change", () => {
     if (zoekInput.value.trim()) zoekProductDirect();
-  });
-</script>
-
-<script>
-  // ------- Menu + modal open/close -------
-  const menuBtn = document.getElementById("menuBtn");
-  const sideMenu = document.getElementById("sideMenu");
-  const backdrop = document.getElementById("backdrop");
-
-  const menuCloseBtn = document.getElementById("menuCloseBtn");
-  const openInsightModalBtn = document.getElementById("openInsightModalBtn");
-
-  const insightModal = document.getElementById("insightModal");
-  const modalCloseBtn = document.getElementById("modalCloseBtn");
-
-  function openMenu() {
-    sideMenu.classList.remove("sf-hidden");
-    backdrop.classList.remove("sf-hidden");
-  }
-  function closeMenu() {
-    sideMenu.classList.add("sf-hidden");
-    // backdrop alleen sluiten als modal ook dicht is
-    if (insightModal.classList.contains("sf-hidden")) backdrop.classList.add("sf-hidden");
-  }
-
-  function openModal() {
-    insightModal.classList.remove("sf-hidden");
-    backdrop.classList.remove("sf-hidden");
-  }
-  function closeModal() {
-    insightModal.classList.add("sf-hidden");
-    // backdrop alleen sluiten als menu ook dicht is
-    if (sideMenu.classList.contains("sf-hidden")) backdrop.classList.add("sf-hidden");
-  }
-
-  menuBtn.addEventListener("click", openMenu);
-  menuCloseBtn.addEventListener("click", closeMenu);
-
-  openInsightModalBtn.addEventListener("click", () => {
-    closeMenu();
-    openModal();
-  });
-
-  modalCloseBtn.addEventListener("click", closeModal);
-
-  // klik op backdrop sluit wat open is
-  backdrop.addEventListener("click", () => {
-    if (!insightModal.classList.contains("sf-hidden")) closeModal();
-    if (!sideMenu.classList.contains("sf-hidden")) closeMenu();
-  });
-
-  // ------- Filialen laden voor zoekveld -------
-  const filiaalSearch = document.getElementById("filiaalSearch");
-  const filiaalOptions = document.getElementById("filiaalOptions");
-
-  // We bewaren mapping "naam -> id"
-  let winkelNameToId = new Map();
-
-  async function loadFilialen() {
-    const { data, error } = await supabase
-      .from("filialen")
-      .select("filiaal_naam")
-      .order("filiaal_naam", { ascending: true });
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    winkelNameToId = new Map();
-    filiaalOptions.innerHTML = "";
-
-    (data || []).forEach(w => {
-      const name = (w.filiaal_naam || "").trim();
-      if (!name) return;
-      winkelNameToId.set(name, w.id);
-
-      const opt = document.createElement("option");
-      opt.value = name; // datalist zoekt automatisch
-      filiaalOptions.appendChild(opt);
-    });
-  }
-
-  // laad filialen meteen bij page load
-  loadFilialen();
-
-  // ------- Submit aanvraag -------
-  const insightForm = document.getElementById("insightForm");
-  const requestMsg = document.getElementById("requestMsg");
-  const submitBtn = document.getElementById("submitRequestBtn");
-
-  insightForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    requestMsg.textContent = "";
-    submitBtn.disabled = true;
-
-    try {
-      const filiaal_Naam = (filiaalSearch.value || "").trim();
-      const winkelId = winkelNameToId.get(winkelNaam) ?? null;
-
-      if (!filiaalNaam) {
-        requestMsg.textContent = "Kies een filiaal.";
-        submitBtn.disabled = false;
-        return;
-      }
-
-      // Als je wilt forceren dat het écht een bestaande winkel is:
-      if (!winkelId) {
-        requestMsg.textContent = "Kies een filiaal uit de lijst (bestaand filiaal).";
-        submitBtn.disabled = false;
-        return;
-      }
-
-      const email = (document.getElementById("aanvraagEmail").value || "").trim();
-      const tel = (document.getElementById("aanvraagTel").value || "").trim();
-
-      const { error } = await supabase
-        .from("insight_requests")
-        .insert([{
-          winkel_id: winkelId,
-          filiaal_naam: filiaalNaam,
-          aanvraag_email: email,
-          aanvraag_tel: tel
-        }]);
-
-      if (error) throw error;
-
-      requestMsg.textContent = "Aanvraag verstuurd ✅ We nemen zo snel mogelijk contact op.";
-      insightForm.reset();
-
-      // modal na 1 sec dicht (optioneel)
-      setTimeout(() => closeModal(), 900);
-
-    } catch (err) {
-      console.error(err);
-      requestMsg.textContent = "Er ging iets mis bij het versturen. Probeer het opnieuw.";
-    } finally {
-      submitBtn.disabled = false;
-    }
   });
 </script>
 
