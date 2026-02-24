@@ -24,7 +24,117 @@
     .filter-row select { width:150px; margin:0; }
     #locatieStatus { text-align:right; font-size:12px; color:#555; margin-bottom:5px; }
   </style>
+  
+  <style>
+  .sf-hidden { display:none; }
+  .sf-menu-btn{
+    position: fixed; top: 14px; right: 14px; z-index: 50;
+    font-size: 22px; padding: 10px 12px; border-radius: 10px;
+    border: 1px solid #ddd; background: #fff;
+  }
+  .sf-side-menu{
+    position: fixed; top: 0; right: 0; height: 100vh; width: 280px; z-index: 60;
+    background: #fff; border-left: 1px solid #eee; padding: 12px;
+    box-shadow: -8px 0 30px rgba(0,0,0,.08);
+  }
+  .sf-side-menu-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 6px 0 14px 0;
+  }
+  .sf-menu-item{
+    width: 100%;
+    padding: 12px; border-radius: 10px; border: 1px solid #eee;
+    background: #fafafa; text-align:left; font-size: 16px;
+  }
+  .sf-backdrop{
+    position: fixed; inset: 0; z-index: 55;
+    background: rgba(0,0,0,.35);
+  }
+  .sf-modal{
+    position: fixed; inset: 0; z-index: 70;
+    display:flex; align-items:center; justify-content:center;
+    padding: 18px;
+  }
+  .sf-modal-card{
+    width: 100%; max-width: 520px;
+    background:#fff; border-radius: 14px; border: 1px solid #eee;
+    padding: 14px;
+    box-shadow: 0 18px 50px rgba(0,0,0,.18);
+  }
+  .sf-modal-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding-bottom: 10px; border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 12px;
+  }
+  .sf-close-btn{
+    border: 1px solid #eee; background:#fff; border-radius:10px;
+    padding: 6px 10px; font-size: 16px;
+  }
+  .sf-form{ display:flex; flex-direction:column; gap: 10px; }
+  .sf-label{ font-size: 14px; }
+  .sf-input{
+    width:100%; padding: 12px; border-radius: 10px;
+    border: 1px solid #ddd; font-size: 16px;
+  }
+  .sf-help{ font-size: 12px; opacity: .75; margin-top: -6px; }
+  .sf-primary{
+    padding: 12px; border-radius: 10px; border: 0;
+    background: #111; color: #fff; font-size: 16px;
+  }
+  .sf-msg{ font-size: 13px; margin-top: 6px; }
+</style>
+  
 </head>
+
+<!-- Hamburger button -->
+<button id="menuBtn" class="sf-menu-btn" aria-label="Menu">
+  ☰
+</button>
+
+<!-- Side menu -->
+<div id="sideMenu" class="sf-side-menu sf-hidden">
+  <div class="sf-side-menu-header">
+    <strong>Menu</strong>
+    <button id="menuCloseBtn" class="sf-close-btn" aria-label="Sluiten">✕</button>
+  </div>
+
+  <button id="openInsightModalBtn" class="sf-menu-item">
+    Filiaal inzicht aanvragen
+  </button>
+</div>
+
+<!-- Backdrop -->
+<div id="backdrop" class="sf-backdrop sf-hidden"></div>
+
+<!-- Modal -->
+<div id="insightModal" class="sf-modal sf-hidden" role="dialog" aria-modal="true">
+  <div class="sf-modal-card">
+    <div class="sf-modal-header">
+      <strong>Filiaal inzicht aanvragen</strong>
+      <button id="modalCloseBtn" class="sf-close-btn" aria-label="Sluiten">✕</button>
+    </div>
+
+    <form id="insightForm" class="sf-form">
+      <label class="sf-label">Filiaal</label>
+      <!-- Simpele “zoek” zonder veel code: datalist -->
+      <input id="filiaalSearch" class="sf-input" list="filiaalOptions" placeholder="Zoek filiaal..." autocomplete="off" required />
+      <datalist id="filiaalOptions"></datalist>
+      <small class="sf-help">Tip: begin te typen, kies uit de lijst.</small>
+
+      <label class="sf-label">E-mailadres aanvrager</label>
+      <input id="aanvraagEmail" class="sf-input" type="email" placeholder="naam@bedrijf.nl" required />
+
+      <label class="sf-label">Telefoonnummer aanvrager</label>
+      <input id="aanvraagTel" class="sf-input" type="tel" placeholder="06 12345678" required />
+
+      <button id="submitRequestBtn" class="sf-primary" type="submit">
+        Aanvraag versturen
+      </button>
+
+      <div id="requestMsg" class="sf-msg"></div>
+    </form>
+  </div>
+</div>
 
 <body>
 <div class="container">
@@ -260,6 +370,145 @@
 
   document.getElementById("afstandSelect").addEventListener("change", () => {
     if (zoekInput.value.trim()) zoekProductDirect();
+  });
+</script>
+
+<script>
+  // ------- Menu + modal open/close -------
+  const menuBtn = document.getElementById("menuBtn");
+  const sideMenu = document.getElementById("sideMenu");
+  const backdrop = document.getElementById("backdrop");
+
+  const menuCloseBtn = document.getElementById("menuCloseBtn");
+  const openInsightModalBtn = document.getElementById("openInsightModalBtn");
+
+  const insightModal = document.getElementById("insightModal");
+  const modalCloseBtn = document.getElementById("modalCloseBtn");
+
+  function openMenu() {
+    sideMenu.classList.remove("sf-hidden");
+    backdrop.classList.remove("sf-hidden");
+  }
+  function closeMenu() {
+    sideMenu.classList.add("sf-hidden");
+    // backdrop alleen sluiten als modal ook dicht is
+    if (insightModal.classList.contains("sf-hidden")) backdrop.classList.add("sf-hidden");
+  }
+
+  function openModal() {
+    insightModal.classList.remove("sf-hidden");
+    backdrop.classList.remove("sf-hidden");
+  }
+  function closeModal() {
+    insightModal.classList.add("sf-hidden");
+    // backdrop alleen sluiten als menu ook dicht is
+    if (sideMenu.classList.contains("sf-hidden")) backdrop.classList.add("sf-hidden");
+  }
+
+  menuBtn.addEventListener("click", openMenu);
+  menuCloseBtn.addEventListener("click", closeMenu);
+
+  openInsightModalBtn.addEventListener("click", () => {
+    closeMenu();
+    openModal();
+  });
+
+  modalCloseBtn.addEventListener("click", closeModal);
+
+  // klik op backdrop sluit wat open is
+  backdrop.addEventListener("click", () => {
+    if (!insightModal.classList.contains("sf-hidden")) closeModal();
+    if (!sideMenu.classList.contains("sf-hidden")) closeMenu();
+  });
+
+  // ------- Filialen laden voor zoekveld -------
+  const filiaalSearch = document.getElementById("filiaalSearch");
+  const filiaalOptions = document.getElementById("filiaalOptions");
+
+  // We bewaren mapping "naam -> id"
+  let winkelNameToId = new Map();
+
+  async function loadFilialen() {
+    const { data, error } = await supabase
+      .from("winkels")
+      .select("id, winkel_naam")
+      .order("winkel_naam", { ascending: true });
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    winkelNameToId = new Map();
+    filiaalOptions.innerHTML = "";
+
+    (data || []).forEach(w => {
+      const name = (w.winkel_naam || "").trim();
+      if (!name) return;
+      winkelNameToId.set(name, w.id);
+
+      const opt = document.createElement("option");
+      opt.value = name; // datalist zoekt automatisch
+      filiaalOptions.appendChild(opt);
+    });
+  }
+
+  // laad filialen meteen bij page load
+  loadFilialen();
+
+  // ------- Submit aanvraag -------
+  const insightForm = document.getElementById("insightForm");
+  const requestMsg = document.getElementById("requestMsg");
+  const submitBtn = document.getElementById("submitRequestBtn");
+
+  insightForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    requestMsg.textContent = "";
+    submitBtn.disabled = true;
+
+    try {
+      const winkelNaam = (filiaalSearch.value || "").trim();
+      const winkelId = winkelNameToId.get(winkelNaam) ?? null;
+
+      if (!winkelNaam) {
+        requestMsg.textContent = "Kies een filiaal.";
+        submitBtn.disabled = false;
+        return;
+      }
+
+      // Als je wilt forceren dat het écht een bestaande winkel is:
+      if (!winkelId) {
+        requestMsg.textContent = "Kies een filiaal uit de lijst (bestaand filiaal).";
+        submitBtn.disabled = false;
+        return;
+      }
+
+      const email = (document.getElementById("aanvraagEmail").value || "").trim();
+      const tel = (document.getElementById("aanvraagTel").value || "").trim();
+
+      const { error } = await supabase
+        .from("insight_requests")
+        .insert([{
+          winkel_id: winkelId,
+          winkel_naam: winkelNaam,
+          aanvraag_email: email,
+          aanvraag_tel: tel
+        }]);
+
+      if (error) throw error;
+
+      requestMsg.textContent = "Aanvraag verstuurd ✅ We nemen zo snel mogelijk contact op.";
+      insightForm.reset();
+
+      // modal na 1 sec dicht (optioneel)
+      setTimeout(() => closeModal(), 900);
+
+    } catch (err) {
+      console.error(err);
+      requestMsg.textContent = "Er ging iets mis bij het versturen. Probeer het opnieuw.";
+    } finally {
+      submitBtn.disabled = false;
+    }
   });
 </script>
 
