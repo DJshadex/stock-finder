@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Stock Finder — Admin</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 0; background:#0b0f19; color:#e8eefc; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin:0; background:#0b0f19; color:#e8eefc; }
     .wrap { max-width: 980px; margin: 0 auto; padding: 20px; }
     .card { background:#121a2a; border:1px solid #21304d; border-radius: 14px; padding: 16px; }
-    .row { display:flex; gap:12px; flex-wrap: wrap; }
-    .col { flex:1 1 280px; }
+    .row { display:flex; gap:12px; flex-wrap: wrap; align-items:flex-start; }
+    .col { flex:1 1 320px; }
     .muted { color:#a9b6d6; font-size: 14px; }
     h1 { margin: 0 0 6px 0; font-size: 20px; }
     h2 { margin: 0 0 8px 0; font-size: 16px; }
@@ -17,70 +17,179 @@
     input { width: 100%; background:#0f1626; color:#e8eefc; }
     button { background:#2b6cff; color:white; border:none; cursor:pointer; }
     button.secondary { background:#223154; }
-    button.danger { background:#ff3b3b; }
-    .list { margin-top: 10px; }
-    .item { display:flex; justify-content:space-between; gap:10px; padding:10px; border:1px solid #21304d; border-radius: 12px; margin-top: 8px; background:#0f1626; }
-    .tag { font-size: 12px; padding: 2px 8px; border-radius:999px; background:#223154; color:#cfe0ff; }
+    .error { color:#ffb4b4; margin-top:10px; white-space: pre-wrap; }
+    .ok { color:#b7ffbf; margin-top:10px; white-space: pre-wrap; }
+    .hidden { display:none; }
+    .topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    code { background:#0f1626; border:1px solid #21304d; padding:2px 6px; border-radius:8px; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card" style="margin-bottom:12px;">
-      <h1>Admin dashboard</h1>
-      <div class="muted">Mock versie om layout/flow te testen (nog geen echte login).</div>
-    </div>
-
-    <div class="row">
-      <div class="col">
-        <div class="card">
-          <h2>Login (mock)</h2>
-          <div class="muted" style="margin-bottom:10px;">Dit is alleen voor uiterlijk. Later koppelen we Supabase Auth.</div>
-          <label class="muted">E-mail</label>
-          <input placeholder="jij@voorbeeld.nl" />
-          <div style="height:8px;"></div>
-          <label class="muted">Wachtwoord</label>
-          <input type="password" placeholder="••••••••" />
-          <div style="height:12px;"></div>
-          <button style="width:100%;">Inloggen</button>
+      <div class="topbar">
+        <div>
+          <h1>Admin</h1>
+          <div class="muted">Beveiligd via Supabase Auth (alleen jouw account).</div>
         </div>
-      </div>
-
-      <div class="col">
-        <div class="card">
-          <h2>Acties</h2>
-          <div class="row" style="margin-top:10px;">
-            <button class="secondary">Sync nu starten</button>
-            <button class="secondary">Logs bekijken</button>
-            <button class="secondary">Nieuwe winkel toevoegen</button>
-            <button class="danger">Winkel verwijderen</button>
-          </div>
-          <div class="muted" style="margin-top:10px;">
-            Later kunnen we hier echte knoppen van maken (sync trigger, cleanup, etc.).
-          </div>
-        </div>
+        <div class="muted">Project: <code>xqhxvlfuariwoethorke</code></div>
       </div>
     </div>
 
-    <div class="card" style="margin-top:12px;">
-      <h2>Winkels (voorbeeldlijst)</h2>
-      <div class="list">
-        <div class="item">
-          <div>
-            <div><strong>Susuki</strong> <span class="tag">filiaal_id 14</span></div>
-            <div class="muted">Laatste sync: 2 minuten geleden</div>
-          </div>
-          <div class="muted">Status: OK</div>
-        </div>
+    <!-- LOGIN -->
+    <div id="loginCard" class="card">
+      <h2>Inloggen</h2>
+      <div class="muted" style="margin-bottom:10px;">Gebruik je admin e-mail en wachtwoord.</div>
 
-        <div class="item">
-          <div>
-            <div><strong>MediaMarkt Hoorn</strong> <span class="tag">demo</span></div>
-            <div class="muted">Laatste sync: —</div>
-          </div>
-          <div class="muted">Status: —</div>
+      <label class="muted">E-mail</label>
+      <input id="email" placeholder="jij@voorbeeld.nl" autocomplete="email" />
+
+      <div style="height:8px;"></div>
+
+      <label class="muted">Wachtwoord</label>
+      <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
+
+      <div style="height:12px;"></div>
+
+      <button id="loginBtn" style="width:100%;">Inloggen</button>
+
+      <div id="loginMsg" class="error hidden"></div>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="adminCard" class="card hidden">
+      <div class="topbar">
+        <div>
+          <h2>Dashboard</h2>
+          <div class="muted">Ingelogd als: <span id="who"></span></div>
         </div>
+        <button id="logoutBtn" class="secondary">Uitloggen</button>
+      </div>
+
+      <div style="height:12px;"></div>
+
+      <div class="row">
+        <button class="secondary" id="syncBtn">Sync nu starten (later)</button>
+        <button class="secondary" id="logsBtn">Logs (later)</button>
+      </div>
+
+      <div id="adminMsg" class="ok hidden"></div>
+
+      <div style="height:12px;"></div>
+      <div class="muted">
+        Tip: zet dit bestand eerst op je <code>test-versie</code> branch, test het, en merge daarna naar <code>main</code>.
       </div>
     </div>
   </div>
+
+  <!-- Supabase JS (UMD build) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // ✅ jouw project gegevens (zoals jij ze stuurde)
+    const SUPABASE_URL = "https://xqhxvlfuariwoethorke.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxaHh2bGZ1YXJpd29ldGhvcmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MjA4OTksImV4cCI6MjA4NzA5Njg5OX0.fndfzXslGlOoyn3fomGx-6u3vAVakMGhoR87Op8tLHk";
+
+    // 🚨 VUL DIT IN: alleen dit e-mailadres mag admin zijn
+    const ALLOWED_EMAIL = "webmailborre@gmail.com";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const loginCard = document.getElementById("loginCard");
+    const adminCard = document.getElementById("adminCard");
+    const loginMsg = document.getElementById("loginMsg");
+    const adminMsg = document.getElementById("adminMsg");
+    const who = document.getElementById("who");
+
+    function show(el) { el.classList.remove("hidden"); }
+    function hide(el) { el.classList.add("hidden"); }
+
+    function setLoginError(msg) {
+      loginMsg.textContent = msg;
+      show(loginMsg);
+    }
+    function clearLoginError() {
+      loginMsg.textContent = "";
+      hide(loginMsg);
+    }
+    function setAdminOk(msg) {
+      adminMsg.textContent = msg;
+      show(adminMsg);
+      setTimeout(() => hide(adminMsg), 4000);
+    }
+
+    async function enforceOnlyMe(session) {
+      const email = session?.user?.email || "";
+      if (!email) {
+        throw new Error("Geen sessie.");
+      }
+      if (email.toLowerCase() !== ALLOWED_EMAIL.toLowerCase()) {
+        // Niet jij -> meteen uitloggen
+        await supabase.auth.signOut();
+        throw new Error("Geen toegang tot admin.");
+      }
+      return email;
+    }
+
+    async function render() {
+      clearLoginError();
+      hide(adminMsg);
+
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        show(loginCard);
+        hide(adminCard);
+        return;
+      }
+
+      try {
+        const email = await enforceOnlyMe(session);
+        who.textContent = email;
+        hide(loginCard);
+        show(adminCard);
+      } catch (e) {
+        show(loginCard);
+        hide(adminCard);
+        setLoginError(e.message || String(e));
+      }
+    }
+
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      clearLoginError();
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!ALLOWED_EMAIL || ALLOWED_EMAIL.includes("VUL_HIER")) {
+        return setLoginError("Vul eerst ALLOWED_EMAIL in in admin.html (jouw e-mailadres).");
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return setLoginError(error.message);
+
+      try {
+        await enforceOnlyMe(data.session);
+        await render();
+      } catch (e) {
+        setLoginError(e.message || String(e));
+      }
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await supabase.auth.signOut();
+      await render();
+    });
+
+    // (Later) knoppen
+    document.getElementById("syncBtn").addEventListener("click", async () => {
+      setAdminOk("Sync knop komt later (Edge Function / server-side).");
+    });
+    document.getElementById("logsBtn").addEventListener("click", async () => {
+      setAdminOk("Logs scherm komt later.");
+    });
+
+    supabase.auth.onAuthStateChange(() => render());
+    render();
+  </script>
 </body>
 </html>
