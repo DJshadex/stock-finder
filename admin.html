@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Stock Finder — Admin</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 0; background:#0b0f19; color:#e8eefc; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 20px; }
+    .card { background:#121a2a; border:1px solid #21304d; border-radius: 14px; padding: 16px; }
+    .row { display:flex; gap:12px; flex-wrap: wrap; }
+    .col { flex:1 1 280px; }
+    .muted { color:#a9b6d6; font-size: 14px; }
+    h1 { margin: 0 0 6px 0; font-size: 20px; }
+    h2 { margin: 0 0 8px 0; font-size: 16px; }
+    input, button { border-radius: 10px; border:1px solid #2a3a5f; padding: 10px 12px; font-size: 14px; }
+    input { width: 100%; background:#0f1626; color:#e8eefc; }
+    button { background:#2b6cff; color:white; border:none; cursor:pointer; }
+    button.secondary { background:#223154; }
+    button.danger { background:#ff3b3b; }
+    .list { margin-top: 10px; }
+    .item { display:flex; justify-content:space-between; gap:10px; padding:10px; border:1px solid #21304d; border-radius: 12px; margin-top: 8px; background:#0f1626; }
+    .tag { font-size: 12px; padding: 2px 8px; border-radius:999px; background:#223154; color:#cfe0ff; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" style="margin-bottom:12px;">
+      <h1>Admin dashboard</h1>
+      <div class="muted">Mock versie om layout/flow te testen (nog geen echte login).</div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <div class="card">
+          <h2>Login (mock)</h2>
+          <div class="muted" style="margin-bottom:10px;">Dit is alleen voor uiterlijk. Later koppelen we Supabase Auth.</div>
+          <label class="muted">E-mail</label>
+          <input placeholder="jij@voorbeeld.nl" />
+          <div style="height:8px;"></div>
+          <label class="muted">Wachtwoord</label>
+          <input type="password" placeholder="••••••••" />
+          <div style="height:12px;"></div>
+          <button style="width:100%;">Inloggen</button>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="card">
+          <h2>Acties</h2>
+          <div class="row" style="margin-top:10px;">
+            <button class="secondary">Sync nu starten</button>
+            <button class="secondary">Logs bekijken</button>
+            <button class="secondary">Nieuwe winkel toevoegen</button>
+            <button class="danger">Winkel verwijderen</button>
+          </div>
+          <div class="muted" style="margin-top:10px;">
+            Later kunnen we hier echte knoppen van maken (sync trigger, cleanup, etc.).
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <h2>Winkels (voorbeeldlijst)</h2>
+      <div class="list">
+        <div class="item">
+          <div>
+            <div><strong>Susuki</strong> <span class="tag">filiaal_id 14</span></div>
+            <div class="muted">Laatste sync: 2 minuten geleden</div>
+          </div>
+          <div class="muted">Status: OK</div>
+        </div>
+
+        <div class="item">
+          <div>
+            <div><strong>MediaMarkt Hoorn</strong> <span class="tag">demo</span></div>
+            <div class="muted">Laatste sync: —</div>
+          </div>
+          <div class="muted">Status: —</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
