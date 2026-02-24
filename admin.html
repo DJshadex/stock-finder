@@ -191,10 +191,8 @@
     supabase.auth.onAuthStateChange(() => render());
     render();
   </script>
-</body>
-</html>
-
-<script>
+  
+  <script>
   // Toon JS errors op het scherm (handig op mobiel)
   window.addEventListener("error", (e) => {
     const el = document.getElementById("loginMsg");
@@ -217,3 +215,18 @@
     }
   });
 </script>
+
+</body>
+</html>
+
+<script>
+  // Toon JS errors op het scherm (handig op mobiel)
+  window.addEventListener("error", (e) => {
+    const el = document.getElementById("loginMsg");
+    if (el) {
+      el.classList.remove("hidden");
+      el.textContent = "JS error: " + (e.message || e.error || "onbekend");
+    } else {
+      alert("JS error: " + (e.message || "onbekend"));
+    }
+  });
