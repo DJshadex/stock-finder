@@ -12,7 +12,7 @@
       background: #0b0f19;
       color: #e8eefc;
     }
-    .wrap{ max-width: 720px; margin: 40px auto; padding: 20px; }
+    .wrap{ max-width: 820px; margin: 40px auto; padding: 20px; }
     .card{
       background: #121a2a;
       border: 1px solid #21304d;
@@ -51,17 +51,18 @@
     }
     button:disabled{ opacity:.6; cursor:not-allowed; }
 
-    .btn-secondary{ background:#223154; }
-    .btn-danger{ background:#ff3b3b; }
-
     .row{ display:flex; gap:10px; }
     .row > *{ flex:1; }
+
+    .btn-secondary{ background:#223154; }
+    .btn-danger{ background:#ff3b3b; }
+    .btn-green{ background:#1f8a4c; }
 
     .muted{ color:#a9b6d6; font-size: 13px; }
     .error{ color:#ffb4b4; margin-top:10px; }
     .ok{ color:#a7f3b1; margin-top:10px; }
 
-    .hidden{ display:none; }
+    .hidden{ display:none !important; }
 
     .filiaal-card{
       border: 1px solid #21304d;
@@ -75,6 +76,53 @@
       align-items:center;
     }
     .filiaal-meta{ color:#a9b6d6; font-size: 13px; margin-top:4px; }
+
+    /* --- Modal --- */
+    .backdrop{
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 9998;
+    }
+    .modal{
+      position: fixed; inset: 0;
+      display:flex; align-items:center; justify-content:center;
+      padding: 18px;
+      z-index: 9999;
+    }
+    .modal-card{
+      width: 100%;
+      max-width: 560px;
+      background:#121a2a;
+      border: 1px solid #21304d;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    .modal-head{
+      display:flex; align-items:center; justify-content:space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .xbtn{
+      width:auto;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #2a3a5f;
+      background:#0f1626;
+      color:#e8eefc;
+      cursor:pointer;
+      font-weight:700;
+    }
+    .help{
+      color:#a9b6d6;
+      font-size: 12px;
+      margin-top: -4px;
+      line-height: 1.35;
+    }
+    .small{
+      font-size: 12px;
+      color:#a9b6d6;
+    }
   </style>
 </head>
 
@@ -83,7 +131,7 @@
     <div class="card">
 
       <h1>Admin</h1>
-      <div class="muted">Alleen toegankelijk voor gebruikers met role <strong>admin</strong> in <code>user_roles</code>.</div>
+      <div class="muted">Toegang via <code>user_roles</code> (role <strong>admin</strong>).</div>
 
       <!-- LOGIN -->
       <div id="loginSection">
@@ -104,6 +152,17 @@
         <h2 style="margin-top:16px;">Welkom, admin 👋</h2>
         <div class="muted">Je bent ingelogd als:</div>
         <strong id="userEmail"></strong>
+
+        <hr>
+
+        <div class="row">
+          <button id="openAddWinkelBtn" class="btn-green">+ Winkel toevoegen</button>
+          <button id="openAddFiliaalBtn" class="btn-green">+ Filiaal toevoegen</button>
+        </div>
+        <div class="help">
+          Winkel toevoegen = winkel_naam + website_url. <br>
+          Filiaal toevoegen = filiaal_naam + stad + adres + automatische lat/lon (via OpenStreetMap geocoding).
+        </div>
 
         <hr>
 
@@ -130,6 +189,66 @@
     </div>
   </div>
 
+  <!-- Modal: Winkel toevoegen -->
+  <div id="backdrop" class="backdrop hidden"></div>
+
+  <div id="winkelModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <strong>Winkel toevoegen</strong>
+        <button id="closeWinkelModal" class="xbtn" aria-label="Sluiten">✕</button>
+      </div>
+
+      <label>Winkel naam</label>
+      <input id="newWinkelNaam" type="text" placeholder="Bijv. Action" />
+
+      <label>Website URL</label>
+      <input id="newWinkelWebsite" type="url" placeholder="https://..." />
+
+      <div class="row" style="margin-top:10px;">
+        <button id="saveWinkelBtn" class="btn-green">Opslaan</button>
+        <button id="cancelWinkelBtn" class="btn-secondary">Annuleren</button>
+      </div>
+
+      <div id="winkelMsg" class="small" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- Modal: Filiaal toevoegen -->
+  <div id="filiaalModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <strong>Filiaal toevoegen</strong>
+        <button id="closeFiliaalModal" class="xbtn" aria-label="Sluiten">✕</button>
+      </div>
+
+      <label>Winkel (koppelen)</label>
+      <select id="filiaalWinkelSelect"></select>
+      <div class="help">Kies de winkel waar dit filiaal bij hoort.</div>
+
+      <label>Filiaal naam</label>
+      <input id="newFiliaalNaam" type="text" placeholder="Bijv. Action Hoorn" />
+
+      <label>Stad</label>
+      <input id="newFiliaalStad" type="text" placeholder="Bijv. Hoorn" />
+
+      <label>Adres</label>
+      <input id="newFiliaalAdres" type="text" placeholder="Bijv. Grote Noord 10" />
+
+      <div class="help">
+        We proberen automatisch latitude/longitude op te halen via OpenStreetMap (Nominatim).<br>
+        Als je adres te vaag is, maak ‘m specifieker (straat + huisnummer + stad).
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <button id="saveFiliaalBtn" class="btn-green">Opslaan</button>
+        <button id="cancelFiliaalBtn" class="btn-secondary">Annuleren</button>
+      </div>
+
+      <div id="filiaalMsg" class="small" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
   <script type="module">
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -143,7 +262,6 @@
     const adminSection = document.getElementById("adminSection");
     const loginMsg = document.getElementById("loginMsg");
     const userEmailEl = document.getElementById("userEmail");
-
     const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
 
@@ -153,10 +271,36 @@
     const prevPageBtn = document.getElementById("prevPageBtn");
     const nextPageBtn = document.getElementById("nextPageBtn");
 
-    // Paging
+    // Modal UI
+    const backdrop = document.getElementById("backdrop");
+
+    const openAddWinkelBtn = document.getElementById("openAddWinkelBtn");
+    const winkelModal = document.getElementById("winkelModal");
+    const closeWinkelModal = document.getElementById("closeWinkelModal");
+    const cancelWinkelBtn = document.getElementById("cancelWinkelBtn");
+    const saveWinkelBtn = document.getElementById("saveWinkelBtn");
+    const newWinkelNaam = document.getElementById("newWinkelNaam");
+    const newWinkelWebsite = document.getElementById("newWinkelWebsite");
+    const winkelMsg = document.getElementById("winkelMsg");
+
+    const openAddFiliaalBtn = document.getElementById("openAddFiliaalBtn");
+    const filiaalModal = document.getElementById("filiaalModal");
+    const closeFiliaalModal = document.getElementById("closeFiliaalModal");
+    const cancelFiliaalBtn = document.getElementById("cancelFiliaalBtn");
+    const saveFiliaalBtn = document.getElementById("saveFiliaalBtn");
+    const filiaalWinkelSelect = document.getElementById("filiaalWinkelSelect");
+    const newFiliaalNaam = document.getElementById("newFiliaalNaam");
+    const newFiliaalStad = document.getElementById("newFiliaalStad");
+    const newFiliaalAdres = document.getElementById("newFiliaalAdres");
+    const filiaalMsg = document.getElementById("filiaalMsg");
+
+    // Data/paging
     let currentWinkelId = null;
     let page = 0;
     const PAGE_SIZE = 10;
+
+    // Cache winkels (voor modal select)
+    let winkelsCache = []; // [{winkel_id, winkel_naam}]
 
     function escapeHtml(s) {
       return String(s ?? "")
@@ -173,8 +317,6 @@
       if (message) {
         loginMsg.textContent = message;
         loginMsg.classList.remove("hidden");
-        loginMsg.classList.remove("ok");
-        loginMsg.classList.add("error");
       } else {
         loginMsg.textContent = "";
         loginMsg.classList.add("hidden");
@@ -188,7 +330,6 @@
     }
 
     async function isAdmin(user) {
-      // Verwacht tabel: public.user_roles(user_id uuid primary key, role text)
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
@@ -205,52 +346,42 @@
         showLogin();
         return null;
       }
-
       const ok = await isAdmin(user);
       if (!ok) {
         await supabase.auth.signOut();
         showLogin("Geen toegang tot admin.");
         return null;
       }
-
       showAdmin(user.email);
       return user;
     }
 
-    // ---------- Login ----------
-    loginBtn.addEventListener("click", async () => {
-      loginBtn.disabled = true;
-      try {
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value;
+    // --------- Modals ----------
+    function openModal(modalEl) {
+      backdrop.classList.remove("hidden");
+      modalEl.classList.remove("hidden");
+    }
+    function closeModal(modalEl) {
+      modalEl.classList.add("hidden");
+      // sluit backdrop alleen als beide modals dicht zijn
+      if (winkelModal.classList.contains("hidden") && filiaalModal.classList.contains("hidden")) {
+        backdrop.classList.add("hidden");
+      }
+    }
 
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-          showLogin(error.message);
-          return;
-        }
+    backdrop.addEventListener("click", () => {
+      closeModal(winkelModal);
+      closeModal(filiaalModal);
+    });
 
-        const ok = await isAdmin(data.user);
-        if (!ok) {
-          await supabase.auth.signOut();
-          showLogin("Geen toegang tot admin.");
-          return;
-        }
-
-        showAdmin(data.user.email);
-        await laadWinkels(); // pas laden als admin OK
-      } finally {
-        loginBtn.disabled = false;
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeModal(winkelModal);
+        closeModal(filiaalModal);
       }
     });
 
-    // ---------- Logout ----------
-    logoutBtn.addEventListener("click", async () => {
-      await supabase.auth.signOut();
-      showLogin();
-    });
-
-    // ---------- Winkels / Filialen ----------
+    // --------- Winkels / Filialen ----------
     async function laadWinkels() {
       winkelSelect.innerHTML = `<option value="">Laden…</option>`;
       filialenList.innerHTML = "";
@@ -258,7 +389,7 @@
 
       const { data, error } = await supabase
         .from("winkels")
-        .select("winkel_id, winkel_naam")
+        .select("winkel_id, winkel_naam, website_url")
         .order("winkel_naam", { ascending: true });
 
       if (error) {
@@ -266,16 +397,44 @@
         return;
       }
 
+      winkelsCache = data || [];
+
       winkelSelect.innerHTML =
         `<option value="">— kies een winkel —</option>` +
-        (data || []).map(w => `<option value="${w.winkel_id}">${escapeHtml(w.winkel_naam)}</option>`).join("");
+        winkelsCache.map(w => `<option value="${w.winkel_id}">${escapeHtml(w.winkel_naam)}</option>`).join("");
 
-      // Belangrijk: NIET automatisch naar eerste winkel springen
-      currentWinkelId = null;
-      page = 0;
-      prevPageBtn.disabled = true;
-      nextPageBtn.disabled = true;
-      filialenStatus.textContent = "Kies eerst een winkel.";
+      // Niet auto-selecten
+      if (!currentWinkelId) {
+        prevPageBtn.disabled = true;
+        nextPageBtn.disabled = true;
+        filialenStatus.textContent = "Kies eerst een winkel.";
+      } else {
+        // Als current winkel niet meer bestaat, reset
+        const exists = winkelsCache.some(w => String(w.winkel_id) === String(currentWinkelId));
+        if (!exists) {
+          currentWinkelId = null;
+          winkelSelect.value = "";
+          prevPageBtn.disabled = true;
+          nextPageBtn.disabled = true;
+          filialenStatus.textContent = "Kies eerst een winkel.";
+        } else {
+          winkelSelect.value = String(currentWinkelId);
+          await laadFilialen();
+        }
+      }
+
+      // Vul ook de modal-select
+      fillFiliaalWinkelSelect();
+    }
+
+    function fillFiliaalWinkelSelect() {
+      filiaalWinkelSelect.innerHTML =
+        `<option value="">— kies een winkel —</option>` +
+        winkelsCache.map(w => `<option value="${w.winkel_id}">${escapeHtml(w.winkel_naam)}</option>`).join("");
+
+      if (currentWinkelId) {
+        filiaalWinkelSelect.value = String(currentWinkelId);
+      }
     }
 
     async function laadFilialen() {
@@ -377,6 +536,180 @@
       });
     }
 
+    // --------- Geocoding (lat/lon automatisch) ----------
+    async function geocodeLatLon(addressString) {
+      // OpenStreetMap Nominatim (gratis, geen key). Kan soms traag/limiet hebben.
+      // We sturen een normale query en pakken de eerste match.
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addressString)}`;
+
+      const res = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json"
+          // "User-Agent" header kan niet in browser; dit is OK.
+        }
+      });
+
+      if (!res.ok) throw new Error("Geocoding service niet bereikbaar.");
+      const json = await res.json();
+      if (!Array.isArray(json) || json.length === 0) return null;
+
+      const item = json[0];
+      const lat = item?.lat ? Number(item.lat) : null;
+      const lon = item?.lon ? Number(item.lon) : null;
+
+      if (lat == null || lon == null || Number.isNaN(lat) || Number.isNaN(lon)) return null;
+      return { lat, lon };
+    }
+
+    // --------- Add Winkel ----------
+    openAddWinkelBtn.addEventListener("click", async () => {
+      winkelMsg.textContent = "";
+      newWinkelNaam.value = "";
+      newWinkelWebsite.value = "";
+      openModal(winkelModal);
+      setTimeout(() => newWinkelNaam.focus(), 50);
+    });
+
+    closeWinkelModal.addEventListener("click", () => closeModal(winkelModal));
+    cancelWinkelBtn.addEventListener("click", () => closeModal(winkelModal));
+
+    saveWinkelBtn.addEventListener("click", async () => {
+      winkelMsg.textContent = "";
+      const naam = (newWinkelNaam.value || "").trim();
+      const website = (newWinkelWebsite.value || "").trim();
+
+      if (!naam) {
+        winkelMsg.textContent = "Vul een winkelnaam in.";
+        return;
+      }
+
+      saveWinkelBtn.disabled = true;
+      saveWinkelBtn.textContent = "Bezig…";
+
+      try {
+        const payload = { winkel_naam: naam };
+        if (website) payload.website_url = website;
+
+        const { data, error } = await supabase
+          .from("winkels")
+          .insert([payload])
+          .select("winkel_id")
+          .single();
+
+        if (error) {
+          winkelMsg.textContent = "Fout: " + error.message;
+          return;
+        }
+
+        winkelMsg.textContent = "Winkel toegevoegd ✅";
+        currentWinkelId = data?.winkel_id ?? null;
+
+        await laadWinkels();
+        if (currentWinkelId) {
+          winkelSelect.value = String(currentWinkelId);
+          page = 0;
+          await laadFilialen();
+        }
+
+        setTimeout(() => closeModal(winkelModal), 600);
+      } finally {
+        saveWinkelBtn.disabled = false;
+        saveWinkelBtn.textContent = "Opslaan";
+      }
+    });
+
+    // --------- Add Filiaal ----------
+    openAddFiliaalBtn.addEventListener("click", async () => {
+      filiaalMsg.textContent = "";
+      newFiliaalNaam.value = "";
+      newFiliaalStad.value = "";
+      newFiliaalAdres.value = "";
+
+      fillFiliaalWinkelSelect();
+
+      // als er een winkel geselecteerd is in beheer, zet die alvast
+      if (currentWinkelId) {
+        filiaalWinkelSelect.value = String(currentWinkelId);
+      }
+
+      openModal(filiaalModal);
+      setTimeout(() => newFiliaalNaam.focus(), 50);
+    });
+
+    closeFiliaalModal.addEventListener("click", () => closeModal(filiaalModal));
+    cancelFiliaalBtn.addEventListener("click", () => closeModal(filiaalModal));
+
+    saveFiliaalBtn.addEventListener("click", async () => {
+      filiaalMsg.textContent = "";
+
+      const winkelId = filiaalWinkelSelect.value ? Number(filiaalWinkelSelect.value) : null;
+      const filiaalNaam = (newFiliaalNaam.value || "").trim();
+      const stad = (newFiliaalStad.value || "").trim();
+      const adres = (newFiliaalAdres.value || "").trim();
+
+      if (!winkelId || Number.isNaN(winkelId)) {
+        filiaalMsg.textContent = "Kies eerst een winkel.";
+        return;
+      }
+      if (!filiaalNaam || !stad || !adres) {
+        filiaalMsg.textContent = "Vul filiaal_naam, stad en adres in.";
+        return;
+      }
+
+      saveFiliaalBtn.disabled = true;
+      saveFiliaalBtn.textContent = "Geocoding…";
+
+      try {
+        const query = `${adres}, ${stad}, Nederland`;
+        const coords = await geocodeLatLon(query);
+
+        if (!coords) {
+          filiaalMsg.textContent = "Kon geen latitude/longitude vinden. Maak het adres specifieker (straat + huisnummer + stad).";
+          return;
+        }
+
+        saveFiliaalBtn.textContent = "Opslaan…";
+
+        const payload = {
+          winkel_id: winkelId,
+          filiaal_naam: filiaalNaam,
+          stad: stad,
+          adres: adres,
+          lat: coords.lat,
+          lon: coords.lon
+        };
+
+        const { data, error } = await supabase
+          .from("filialen")
+          .insert([payload])
+          .select("filiaal_id")
+          .single();
+
+        if (error) {
+          filiaalMsg.textContent = "Fout: " + error.message;
+          return;
+        }
+
+        filiaalMsg.textContent = `Filiaal toegevoegd ✅ (filiaal_id: ${data?.filiaal_id ?? "?"})`;
+
+        // Update beheerselectie naar deze winkel (als je daar wil blijven)
+        currentWinkelId = winkelId;
+        winkelSelect.value = String(winkelId);
+        page = 0;
+        await laadFilialen();
+
+        setTimeout(() => closeModal(filiaalModal), 700);
+      } catch (e) {
+        console.error(e);
+        filiaalMsg.textContent = "Fout bij geocoding/opslaan. Probeer opnieuw of gebruik een specifieker adres.";
+      } finally {
+        saveFiliaalBtn.disabled = false;
+        saveFiliaalBtn.textContent = "Opslaan";
+      }
+    });
+
+    // --------- Events beheer ----------
     winkelSelect.addEventListener("change", async () => {
       currentWinkelId = winkelSelect.value ? Number(winkelSelect.value) : null;
       page = 0;
@@ -393,8 +726,39 @@
       await laadFilialen();
     });
 
-    // ---------- Init ----------
-    // Eerst checken of er een session is en of die user admin is.
+    // --------- Auth ----------
+    loginBtn.addEventListener("click", async () => {
+      loginBtn.disabled = true;
+      try {
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          showLogin(error.message);
+          return;
+        }
+
+        const ok = await isAdmin(data.user);
+        if (!ok) {
+          await supabase.auth.signOut();
+          showLogin("Geen toegang tot admin.");
+          return;
+        }
+
+        showAdmin(data.user.email);
+        await laadWinkels();
+      } finally {
+        loginBtn.disabled = false;
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      await supabase.auth.signOut();
+      showLogin();
+    });
+
+    // --------- Init ----------
     const user = await requireAdminOrLogout();
     if (user) {
       await laadWinkels();
