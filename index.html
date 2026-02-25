@@ -96,6 +96,28 @@
     .sf-msg{ font-size: 13px; margin-top: 6px; }
     .sf-msg.ok{ color:#1b7f2a; }
     .sf-msg.err{ color:#b00020; }
+
+    /* --- Custom dropdown (werkt op iPhone/Safari; datalist is vaak buggy) --- */
+    .sf-dropdown{
+      position:absolute;
+      top: 52px;
+      left: 0;
+      right: 0;
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius:10px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.12);
+      max-height: 240px;
+      overflow:auto;
+      z-index: 20000;
+    }
+    .sf-dropdown-item{
+      padding: 12px;
+      border-bottom: 1px solid #f2f2f2;
+      font-size: 15px;
+    }
+    .sf-dropdown-item:last-child{ border-bottom:0; }
+    .sf-dropdown-item:active{ background:#f3f3f3; }
   </style>
 </head>
 
@@ -129,15 +151,19 @@
 
     <form id="insightForm" class="sf-form">
       <label class="sf-label">Filiaal</label>
-      <input
-        id="filiaalSearch"
-        class="sf-input"
-        list="filiaalOptions"
-        placeholder="Zoek filiaal_naam..."
-        autocomplete="off"
-        required
-      />
-      <datalist id="filiaalOptions"></datalist>
+
+      <!-- Custom dropdown wrapper -->
+      <div style="position:relative;">
+        <input
+          id="filiaalSearch"
+          class="sf-input"
+          placeholder="Zoek filiaal..."
+          autocomplete="off"
+          required
+        />
+        <div id="filiaalDropdown" class="sf-dropdown sf-hidden"></div>
+      </div>
+
       <div class="sf-help">Begin te typen en kies een filiaal uit de lijst.</div>
 
       <label class="sf-label">E-mailadres aanvrager</label>
@@ -194,7 +220,6 @@
   const backdrop = document.getElementById("backdrop");
   const menuCloseBtn = document.getElementById("menuCloseBtn");
   const openInsightModalBtn = document.getElementById("openInsightModalBtn");
-
   const insightModal = document.getElementById("insightModal");
   const modalCloseBtn = document.getElementById("modalCloseBtn");
 
@@ -229,6 +254,8 @@
   openInsightModalBtn.addEventListener("click", () => {
     closeMenu();
     openModal();
+    // focus op filiaal input voor gemak
+    setTimeout(() => document.getElementById("filiaalSearch").focus(), 50);
   });
 
   modalCloseBtn.addEventListener("click", closeModal);
@@ -246,18 +273,21 @@
   });
 
   // --------------------------------
-  // Filiaal zoeken op filiaal_naam
+  // Filiaal zoeken (custom dropdown) op filiaal_naam
   // --------------------------------
   const filiaalSearch = document.getElementById("filiaalSearch");
-  const filiaalOptions = document.getElementById("filiaalOptions");
+  const filiaalDropdown = document.getElementById("filiaalDropdown");
 
-  // Map: label -> filiaal_id (en ook winkel_id als je dat later wilt)
-  let filiaalLabelToId = new Map();
+  let filialenCache = [];          // [{ filiaal_id, filiaal_naam }]
+  let selectedFiliaalId = null;    // gekozen filiaal_id
 
-  function makeFiliaalLabel(f) {
-    // Alleen filiaal_naam tonen (zoals jij vroeg).
-    // Als je dubbele namen hebt, voeg later stad toe.
-    return (f.filiaal_naam || "Onbekend filiaal").trim();
+  function escapeHtml(str) {
+    return String(str)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
   }
 
   async function loadFilialenForRequest() {
@@ -271,23 +301,72 @@
       return;
     }
 
-    filiaalLabelToId = new Map();
-    filiaalOptions.innerHTML = "";
-
-    (data || []).forEach(f => {
-      const label = makeFiliaalLabel(f);
-      if (!label) return;
-
-      // Als er dubbele filiaal_naam bestaat, overschrijft dit de vorige.
-      // Dan: voeg stad toe in label. (zeg maar als dit speelt)
-      filiaalLabelToId.set(label, f.filiaal_id);
-
-      const opt = document.createElement("option");
-      opt.value = label;
-      filiaalOptions.appendChild(opt);
-    });
+    filialenCache = (data || []).filter(f => (f.filiaal_naam || "").trim() !== "");
   }
 
+  function hideDropdown() {
+    filiaalDropdown.classList.add("sf-hidden");
+  }
+
+  function showDropdown(items) {
+    if (!items.length) {
+      filiaalDropdown.innerHTML = `<div class="sf-dropdown-item" style="opacity:.7;">Geen filialen gevonden</div>`;
+    } else {
+      filiaalDropdown.innerHTML = items.slice(0, 30).map(f => `
+        <div class="sf-dropdown-item" data-id="${f.filiaal_id}">
+          ${escapeHtml(f.filiaal_naam)}
+        </div>
+      `).join("");
+    }
+    filiaalDropdown.classList.remove("sf-hidden");
+  }
+
+  filiaalSearch.addEventListener("input", () => {
+    const q = (filiaalSearch.value || "").trim().toLowerCase();
+    selectedFiliaalId = null;
+
+    if (!q) {
+      hideDropdown();
+      return;
+    }
+
+    const filtered = filialenCache.filter(f =>
+      (f.filiaal_naam || "").toLowerCase().includes(q)
+    );
+
+    showDropdown(filtered);
+  });
+
+  filiaalSearch.addEventListener("focus", () => {
+    const q = (filiaalSearch.value || "").trim().toLowerCase();
+    if (!q) return;
+
+    const filtered = filialenCache.filter(f =>
+      (f.filiaal_naam || "").toLowerCase().includes(q)
+    );
+    showDropdown(filtered);
+  });
+
+  filiaalDropdown.addEventListener("click", (e) => {
+    const item = e.target.closest(".sf-dropdown-item");
+    if (!item) return;
+
+    const id = item.getAttribute("data-id");
+    const txt = item.textContent.trim();
+
+    selectedFiliaalId = id;
+    filiaalSearch.value = txt;
+    hideDropdown();
+  });
+
+  // klik buiten dropdown → sluiten
+  document.addEventListener("click", (e) => {
+    if (e.target === filiaalSearch) return;
+    if (filiaalDropdown.contains(e.target)) return;
+    hideDropdown();
+  });
+
+  // Laden bij start
   loadFilialenForRequest();
 
   // -------------------------
@@ -305,11 +384,11 @@
 
     try {
       const filiaalNaam = (filiaalSearch.value || "").trim();
-      const filiaalId = filiaalLabelToId.get(filiaalNaam) ?? null;
+      const filiaalId = selectedFiliaalId;
 
       if (!filiaalId) {
         requestMsg.classList.add("err");
-        requestMsg.textContent = "Kies een bestaand filiaal uit de lijst.";
+        requestMsg.textContent = "Kies een filiaal uit de lijst.";
         submitBtn.disabled = false;
         return;
       }
@@ -317,7 +396,7 @@
       const email = (document.getElementById("aanvraagEmail").value || "").trim();
       const tel = (document.getElementById("aanvraagTel").value || "").trim();
 
-      // ⚠️ PAS DIT AAN naar jouw echte tabelnaam:
+      // ⚠️ PAS DIT AAN ALS JOUW TABEL ANDERS HEET
       const TABLE_NAME = "insignt_request";
 
       const { error } = await client
@@ -334,6 +413,8 @@
       requestMsg.classList.add("ok");
       requestMsg.textContent = "Aanvraag verstuurd ✅ We nemen contact op.";
       insightForm.reset();
+      selectedFiliaalId = null;
+      hideDropdown();
 
       setTimeout(() => closeModal(), 900);
     } catch (err) {
@@ -348,7 +429,6 @@
   // ----------------------------
   // Locatie / product search code
   // ----------------------------
-
   let userLat = null;
   let userLon = null;
   let locatieOpgevraagd = false;
