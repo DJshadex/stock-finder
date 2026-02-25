@@ -10,7 +10,7 @@
     body { font-family: Arial, sans-serif; background: #f4f6f9; padding: 20px; margin:0; }
     h1 { text-align: center; margin-bottom: 20px; }
     .container { max-width: 700px; margin:auto; }
-    input, select { padding: 12px; font-size:16px; margin-bottom:10px; border-radius:6px; border:1px solid #ccc; width: calc(100% - 24px); }
+    input, select { padding: 12px; font-size:16px; margin-bottom:10px; border-radius:6px; border:1px solid #ccc; width: calc(100% - 24px); box-sizing:border-box; }
     button { padding: 10px 14px; border-radius:6px; border:none; cursor:pointer; font-weight:bold; }
     .search-btn { width:100%; background:#007bff; color:white; margin-bottom:20px; }
     .result { background:white; padding:15px; border-radius:10px; margin-bottom:15px; box-shadow:0 2px 6px rgba(0,0,0,0.08);}
@@ -23,10 +23,164 @@
     .filter-row { display:flex; justify-content:flex-end; margin-bottom:10px; align-items:center; gap:10px; }
     .filter-row select { width:150px; margin:0; }
     #locatieStatus { text-align:right; font-size:12px; color:#555; margin-bottom:5px; }
+
+    /* --- Hamburger menu + modal (Stock Finder) --- */
+    .sf-hidden { display:none !important; }
+
+    .sf-menu-btn{
+      position: fixed; top: 14px; right: 14px; z-index: 9999;
+      font-size: 22px; padding: 10px 12px; border-radius: 10px;
+      border: 1px solid #ddd; background: #fff;
+      box-shadow: 0 4px 16px rgba(0,0,0,.08);
+    }
+
+    .sf-backdrop{
+      position: fixed; inset: 0; z-index: 9998;
+      background: rgba(0,0,0,.35);
+    }
+
+    .sf-side-menu{
+      position: fixed; top: 0; right: 0; height: 100vh; width: 290px; z-index: 9999;
+      background: #fff; border-left: 1px solid #eee; padding: 12px;
+      box-shadow: -8px 0 30px rgba(0,0,0,.12);
+    }
+
+    .sf-side-menu-header{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 6px 0 14px 0;
+    }
+
+    .sf-menu-item{
+      width: 100%;
+      padding: 12px; border-radius: 10px; border: 1px solid #eee;
+      background: #fafafa; text-align:left; font-size: 16px;
+    }
+
+    .sf-modal{
+      position: fixed; inset: 0; z-index: 10000;
+      display:flex; align-items:center; justify-content:center;
+      padding: 18px;
+    }
+
+    .sf-modal-card{
+      width: 100%; max-width: 520px;
+      background:#fff; border-radius: 14px; border: 1px solid #eee;
+      padding: 14px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.22);
+    }
+
+    .sf-modal-header{
+      display:flex; align-items:center; justify-content:space-between;
+      padding-bottom: 10px; border-bottom: 1px solid #f0f0f0;
+      margin-bottom: 12px;
+    }
+
+    .sf-close-btn{
+      border: 1px solid #eee; background:#fff; border-radius:10px;
+      padding: 6px 10px; font-size: 16px;
+    }
+
+    .sf-form{ display:flex; flex-direction:column; gap: 10px; }
+    .sf-label{ font-size: 14px; font-weight: 600; }
+    .sf-input{
+      width:100%; padding: 12px; border-radius: 10px;
+      border: 1px solid #ddd; font-size: 16px;
+      box-sizing: border-box;
+      margin: 0;
+    }
+    .sf-help{ font-size: 12px; opacity: .75; margin-top: -6px; }
+    .sf-primary{
+      padding: 12px; border-radius: 10px; border: 0;
+      background: #111; color: #fff; font-size: 16px;
+    }
+    .sf-msg{ font-size: 13px; margin-top: 6px; }
+    .sf-msg.ok{ color:#1b7f2a; }
+    .sf-msg.err{ color:#b00020; }
+
+    /* --- Custom dropdown (werkt op iPhone/Safari; datalist is vaak buggy) --- */
+    .sf-dropdown{
+      position:absolute;
+      top: 52px;
+      left: 0;
+      right: 0;
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius:10px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.12);
+      max-height: 240px;
+      overflow:auto;
+      z-index: 20000;
+    }
+    .sf-dropdown-item{
+      padding: 12px;
+      border-bottom: 1px solid #f2f2f2;
+      font-size: 15px;
+    }
+    .sf-dropdown-item:last-child{ border-bottom:0; }
+    .sf-dropdown-item:active{ background:#f3f3f3; }
   </style>
 </head>
 
 <body>
+
+<!-- ✅ Hamburger button -->
+<button id="menuBtn" class="sf-menu-btn" aria-label="Menu">☰</button>
+
+<!-- ✅ Backdrop (klik = sluiten) -->
+<div id="backdrop" class="sf-backdrop sf-hidden"></div>
+
+<!-- ✅ Side menu -->
+<div id="sideMenu" class="sf-side-menu sf-hidden">
+  <div class="sf-side-menu-header">
+    <strong>Menu</strong>
+    <button id="menuCloseBtn" class="sf-close-btn" aria-label="Sluiten">✕</button>
+  </div>
+
+  <button id="openInsightModalBtn" class="sf-menu-item">
+    Filiaal inzicht aanvragen
+  </button>
+</div>
+
+<!-- ✅ Modal -->
+<div id="insightModal" class="sf-modal sf-hidden" role="dialog" aria-modal="true">
+  <div class="sf-modal-card">
+    <div class="sf-modal-header">
+      <strong>Filiaal inzicht aanvragen</strong>
+      <button id="modalCloseBtn" class="sf-close-btn" aria-label="Sluiten">✕</button>
+    </div>
+
+    <form id="insightForm" class="sf-form">
+      <label class="sf-label">Filiaal</label>
+
+      <!-- Custom dropdown wrapper -->
+      <div style="position:relative;">
+        <input
+          id="filiaalSearch"
+          class="sf-input"
+          placeholder="Zoek filiaal..."
+          autocomplete="off"
+          required
+        />
+        <div id="filiaalDropdown" class="sf-dropdown sf-hidden"></div>
+      </div>
+
+      <div class="sf-help">Begin te typen en kies een filiaal uit de lijst.</div>
+
+      <label class="sf-label">E-mailadres aanvrager</label>
+      <input id="aanvraagEmail" class="sf-input" type="email" placeholder="naam@bedrijf.nl" required />
+
+      <label class="sf-label">Telefoonnummer aanvrager</label>
+      <input id="aanvraagTel" class="sf-input" type="tel" placeholder="06 12345678" required />
+
+      <button id="submitRequestBtn" class="sf-primary" type="submit">
+        Aanvraag versturen
+      </button>
+
+      <div id="requestMsg" class="sf-msg"></div>
+    </form>
+  </div>
+</div>
+
 <div class="container">
   <h1>Zoek een product</h1>
 
@@ -58,12 +212,227 @@
   const { createClient } = supabase;
   const client = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // Locatie
+  // ----------------------------
+  // Hamburger menu + modal logic
+  // ----------------------------
+  const menuBtn = document.getElementById("menuBtn");
+  const sideMenu = document.getElementById("sideMenu");
+  const backdrop = document.getElementById("backdrop");
+  const menuCloseBtn = document.getElementById("menuCloseBtn");
+  const openInsightModalBtn = document.getElementById("openInsightModalBtn");
+  const insightModal = document.getElementById("insightModal");
+  const modalCloseBtn = document.getElementById("modalCloseBtn");
+
+  function openMenu() {
+    sideMenu.classList.remove("sf-hidden");
+    backdrop.classList.remove("sf-hidden");
+  }
+  function closeMenu() {
+    sideMenu.classList.add("sf-hidden");
+    if (insightModal.classList.contains("sf-hidden")) backdrop.classList.add("sf-hidden");
+  }
+  function openModal() {
+    insightModal.classList.remove("sf-hidden");
+    backdrop.classList.remove("sf-hidden");
+  }
+  function closeModal() {
+    insightModal.classList.add("sf-hidden");
+    if (sideMenu.classList.contains("sf-hidden")) backdrop.classList.add("sf-hidden");
+  }
+
+  // Start altijd dicht
+  sideMenu.classList.add("sf-hidden");
+  insightModal.classList.add("sf-hidden");
+  backdrop.classList.add("sf-hidden");
+
+  menuBtn.addEventListener("click", () => {
+    if (sideMenu.classList.contains("sf-hidden")) openMenu();
+    else closeMenu();
+  });
+  menuCloseBtn.addEventListener("click", closeMenu);
+
+  openInsightModalBtn.addEventListener("click", () => {
+    closeMenu();
+    openModal();
+    // focus op filiaal input voor gemak
+    setTimeout(() => document.getElementById("filiaalSearch").focus(), 50);
+  });
+
+  modalCloseBtn.addEventListener("click", closeModal);
+
+  backdrop.addEventListener("click", () => {
+    if (!insightModal.classList.contains("sf-hidden")) closeModal();
+    if (!sideMenu.classList.contains("sf-hidden")) closeMenu();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      if (!insightModal.classList.contains("sf-hidden")) closeModal();
+      if (!sideMenu.classList.contains("sf-hidden")) closeMenu();
+    }
+  });
+
+  // --------------------------------
+  // Filiaal zoeken (custom dropdown) op filiaal_naam
+  // --------------------------------
+  const filiaalSearch = document.getElementById("filiaalSearch");
+  const filiaalDropdown = document.getElementById("filiaalDropdown");
+
+  let filialenCache = [];          // [{ filiaal_id, filiaal_naam }]
+  let selectedFiliaalId = null;    // gekozen filiaal_id
+
+  function escapeHtml(str) {
+    return String(str)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  async function loadFilialenForRequest() {
+    const { data, error } = await client
+      .from("filialen")
+      .select("filiaal_id, filiaal_naam")
+      .order("filiaal_naam", { ascending: true });
+
+    if (error) {
+      console.error("Filialen laden fout:", error);
+      return;
+    }
+
+    filialenCache = (data || []).filter(f => (f.filiaal_naam || "").trim() !== "");
+  }
+
+  function hideDropdown() {
+    filiaalDropdown.classList.add("sf-hidden");
+  }
+
+  function showDropdown(items) {
+    if (!items.length) {
+      filiaalDropdown.innerHTML = `<div class="sf-dropdown-item" style="opacity:.7;">Geen filialen gevonden</div>`;
+    } else {
+      filiaalDropdown.innerHTML = items.slice(0, 30).map(f => `
+        <div class="sf-dropdown-item" data-id="${f.filiaal_id}">
+          ${escapeHtml(f.filiaal_naam)}
+        </div>
+      `).join("");
+    }
+    filiaalDropdown.classList.remove("sf-hidden");
+  }
+
+  filiaalSearch.addEventListener("input", () => {
+    const q = (filiaalSearch.value || "").trim().toLowerCase();
+    selectedFiliaalId = null;
+
+    if (!q) {
+      hideDropdown();
+      return;
+    }
+
+    const filtered = filialenCache.filter(f =>
+      (f.filiaal_naam || "").toLowerCase().includes(q)
+    );
+
+    showDropdown(filtered);
+  });
+
+  filiaalSearch.addEventListener("focus", () => {
+    const q = (filiaalSearch.value || "").trim().toLowerCase();
+    if (!q) return;
+
+    const filtered = filialenCache.filter(f =>
+      (f.filiaal_naam || "").toLowerCase().includes(q)
+    );
+    showDropdown(filtered);
+  });
+
+  filiaalDropdown.addEventListener("click", (e) => {
+    const item = e.target.closest(".sf-dropdown-item");
+    if (!item) return;
+
+    const id = item.getAttribute("data-id");
+    const txt = item.textContent.trim();
+
+    selectedFiliaalId = id;
+    filiaalSearch.value = txt;
+    hideDropdown();
+  });
+
+  // klik buiten dropdown → sluiten
+  document.addEventListener("click", (e) => {
+    if (e.target === filiaalSearch) return;
+    if (filiaalDropdown.contains(e.target)) return;
+    hideDropdown();
+  });
+
+  // Laden bij start
+  loadFilialenForRequest();
+
+  // -------------------------
+  // Aanvraag opslaan in Supabase
+  // -------------------------
+  const insightForm = document.getElementById("insightForm");
+  const requestMsg = document.getElementById("requestMsg");
+  const submitBtn = document.getElementById("submitRequestBtn");
+
+  insightForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    requestMsg.className = "sf-msg";
+    requestMsg.textContent = "";
+    submitBtn.disabled = true;
+
+    try {
+      const filiaalNaam = (filiaalSearch.value || "").trim();
+      const filiaalId = selectedFiliaalId;
+
+      if (!filiaalId) {
+        requestMsg.classList.add("err");
+        requestMsg.textContent = "Kies een filiaal uit de lijst.";
+        submitBtn.disabled = false;
+        return;
+      }
+
+      const email = (document.getElementById("aanvraagEmail").value || "").trim();
+      const tel = (document.getElementById("aanvraagTel").value || "").trim();
+
+      // ⚠️ PAS DIT AAN ALS JOUW TABEL ANDERS HEET
+      const TABLE_NAME = "insignt_request";
+
+      const { error } = await client
+        .from(TABLE_NAME)
+        .insert([{
+          filiaal_id: filiaalId,
+          filiaal_naam: filiaalNaam,
+          aanvraag_email: email,
+          aanvraag_tel: tel
+        }]);
+
+      if (error) throw error;
+
+      requestMsg.classList.add("ok");
+      requestMsg.textContent = "Aanvraag verstuurd ✅ We nemen contact op.";
+      insightForm.reset();
+      selectedFiliaalId = null;
+      hideDropdown();
+
+      setTimeout(() => closeModal(), 900);
+    } catch (err) {
+      console.error("Aanvraag versturen fout:", err);
+      requestMsg.classList.add("err");
+      requestMsg.textContent = "Fout bij versturen. Check tabelnaam + kolomnamen in Supabase.";
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  // ----------------------------
+  // Locatie / product search code
+  // ----------------------------
   let userLat = null;
   let userLon = null;
   let locatieOpgevraagd = false;
 
-  // Debounce + request guard
   let searchDebounceTimer = null;
   let lastRequestId = 0;
 
@@ -116,8 +485,6 @@
     const requestId = ++lastRequestId;
 
     try {
-      // ✅ Nieuwe schema-namen:
-      // producten(product_ean, product_naam) -> voorraad(aantal) -> filialen(...) -> winkels(winkel_naam, website_url)
       const { data, error } = await client
         .from("producten")
         .select(`
@@ -161,29 +528,23 @@
 
           const winkel = filiaal.winkels;
 
-          // Alleen voorraad > 0
           if (!(item.aantal > 0)) return;
 
-          // Afstand berekenen
           let afstand = null;
           if (userLat !== null && userLon !== null && filiaal.lat != null && filiaal.lon != null) {
             afstand = berekenAfstand(userLat, userLon, filiaal.lat, filiaal.lon);
           }
 
-          // Filter op afstand
           if (afstandFilter !== 0) {
             if (afstand === null) return;
             if (afstand > afstandFilter) return;
           }
 
-          // ✅ AANGEPAST: alleen filiaalnaam tonen, fallback naar winkel_naam
           const displayNaam =
             (filiaal.filiaal_naam && filiaal.filiaal_naam.trim() !== "")
               ? filiaal.filiaal_naam
               : (winkel?.winkel_naam || "Onbekende winkel");
 
-
-          // ✅ AANGEPAST: mapsQuery gebruikt winkelnaam indien mogelijk (en anders displayNaam)
           const mapsNaam = winkel?.winkel_naam || displayNaam;
           const mapsQuery = encodeURIComponent(`${mapsNaam} ${filiaal.adres || ""}`.trim());
 
@@ -229,7 +590,6 @@
 
     } catch (err) {
       console.error(err);
-      // Heel vaak is dit RLS: “permission denied” / “row violates row-level security”
       resultatenDiv.innerHTML = "<div class='loading'>Er is een fout opgetreden. Check console (F12) voor details.</div>";
     }
   }
