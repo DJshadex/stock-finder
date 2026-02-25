@@ -259,41 +259,46 @@
   // --------------------------------
   // Filialen laden voor zoek (datalist)
   // --------------------------------
+<script>
   const filiaalSearch = document.getElementById("filiaalSearch");
   const filiaalOptions = document.getElementById("filiaalOptions");
 
-  // Map: "Winkelnaam" -> winkel_id (bij jou heet de kolom winkel_id)
-  let winkelNameToId = new Map();
+  // Map: "Weergavenaam" -> filiaal_id
+  let filiaalLabelToId = new Map();
+
+  function makeFiliaalLabel(f) {
+    // Maak label uniek en duidelijk (handig als meerdere filialen dezelfde naam hebben)
+    const naam = (f.filiaal_naam || "Onbekend filiaal").trim();
+    const stad = (f.stad || "").trim();
+    return stad ? `${naam} — ${stad}` : naam;
+  }
 
   async function loadFilialenForRequest() {
-    // IMPORTANT: jouw tabel heeft (winkel_id, winkel_naam)
     const { data, error } = await client
-      .from("winkels")
-      .select("winkel_id, winkel_naam")
-      .order("winkel_naam", { ascending: true });
+      .from("filialen")
+      .select("filiaal_id, filiaal_naam, stad")
+      .order("filiaal_naam", { ascending: true });
 
     if (error) {
       console.error("Filialen laden fout:", error);
       return;
     }
 
-    winkelNameToId = new Map();
+    filiaalLabelToId = new Map();
     filiaalOptions.innerHTML = "";
 
-    (data || []).forEach(w => {
-      const name = (w.winkel_naam || "").trim();
-      if (!name) return;
-
-      winkelNameToId.set(name, w.winkel_id);
+    (data || []).forEach(f => {
+      const label = makeFiliaalLabel(f);
+      filiaalLabelToId.set(label, f.filiaal_id);
 
       const opt = document.createElement("option");
-      opt.value = name;
+      opt.value = label;
       filiaalOptions.appendChild(opt);
     });
   }
 
-  // Laad filialen meteen
   loadFilialenForRequest();
+</script>
 
   // -------------------------
   // Aanvraag opslaan in Supabase
