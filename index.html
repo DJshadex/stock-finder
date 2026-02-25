@@ -10,7 +10,7 @@
     body { font-family: Arial, sans-serif; background: #f4f6f9; padding: 20px; margin:0; }
     h1 { text-align: center; margin-bottom: 20px; }
     .container { max-width: 700px; margin:auto; }
-    input, select { padding: 12px; font-size:16px; margin-bottom:10px; border-radius:6px; border:1px solid #ccc; width: calc(100% - 24px); }
+    input, select { padding: 12px; font-size:16px; margin-bottom:10px; border-radius:6px; border:1px solid #ccc; width: calc(100% - 24px); box-sizing:border-box; }
     button { padding: 10px 14px; border-radius:6px; border:none; cursor:pointer; font-weight:bold; }
     .search-btn { width:100%; background:#007bff; color:white; margin-bottom:20px; }
     .result { background:white; padding:15px; border-radius:10px; margin-bottom:15px; box-shadow:0 2px 6px rgba(0,0,0,0.08);}
@@ -86,6 +86,7 @@
       width:100%; padding: 12px; border-radius: 10px;
       border: 1px solid #ddd; font-size: 16px;
       box-sizing: border-box;
+      margin: 0;
     }
     .sf-help{ font-size: 12px; opacity: .75; margin-top: -6px; }
     .sf-primary{
@@ -95,9 +96,6 @@
     .sf-msg{ font-size: 13px; margin-top: 6px; }
     .sf-msg.ok{ color:#1b7f2a; }
     .sf-msg.err{ color:#b00020; }
-    .sf-mini{
-      font-size: 12px; opacity:.8; margin-top: 6px; line-height: 1.35;
-    }
   </style>
 </head>
 
@@ -135,7 +133,7 @@
         id="filiaalSearch"
         class="sf-input"
         list="filiaalOptions"
-        placeholder="Zoek filiaal..."
+        placeholder="Zoek filiaal_naam..."
         autocomplete="off"
         required
       />
@@ -153,12 +151,6 @@
       </button>
 
       <div id="requestMsg" class="sf-msg"></div>
-
-      <div class="sf-mini">
-        Let op: dit formulier slaat je aanvraag op in onze database. Automatisch mailen naar
-        <strong>webmailborre@gmail.com</strong> kan pas zodra we een mailservice/edge function toevoegen.
-        Tot die tijd kun je de aanvragen bekijken in Supabase (tabel <code>insight_requests</code>).
-      </div>
     </form>
   </div>
 </div>
@@ -212,9 +204,7 @@
   }
   function closeMenu() {
     sideMenu.classList.add("sf-hidden");
-    if (insightModal.classList.contains("sf-hidden")) {
-      backdrop.classList.add("sf-hidden");
-    }
+    if (insightModal.classList.contains("sf-hidden")) backdrop.classList.add("sf-hidden");
   }
   function openModal() {
     insightModal.classList.remove("sf-hidden");
@@ -222,14 +212,13 @@
   }
   function closeModal() {
     insightModal.classList.add("sf-hidden");
-    if (sideMenu.classList.contains("sf-hidden")) {
-      backdrop.classList.add("sf-hidden");
-    }
+    if (sideMenu.classList.contains("sf-hidden")) backdrop.classList.add("sf-hidden");
   }
 
-  // Menu start altijd dicht (extra safety)
-  closeMenu();
-  closeModal();
+  // Start altijd dicht
+  sideMenu.classList.add("sf-hidden");
+  insightModal.classList.add("sf-hidden");
+  backdrop.classList.add("sf-hidden");
 
   menuBtn.addEventListener("click", () => {
     if (sideMenu.classList.contains("sf-hidden")) openMenu();
@@ -257,26 +246,24 @@
   });
 
   // --------------------------------
-  // Filialen laden voor zoek (datalist)
+  // Filiaal zoeken op filiaal_naam
   // --------------------------------
-<script>
   const filiaalSearch = document.getElementById("filiaalSearch");
   const filiaalOptions = document.getElementById("filiaalOptions");
 
-  // Map: "Weergavenaam" -> filiaal_id
+  // Map: label -> filiaal_id (en ook winkel_id als je dat later wilt)
   let filiaalLabelToId = new Map();
 
   function makeFiliaalLabel(f) {
-    // Maak label uniek en duidelijk (handig als meerdere filialen dezelfde naam hebben)
-    const naam = (f.filiaal_naam || "Onbekend filiaal").trim();
-    const stad = (f.stad || "").trim();
-    return stad ? `${naam} — ${stad}` : naam;
+    // Alleen filiaal_naam tonen (zoals jij vroeg).
+    // Als je dubbele namen hebt, voeg later stad toe.
+    return (f.filiaal_naam || "Onbekend filiaal").trim();
   }
 
   async function loadFilialenForRequest() {
     const { data, error } = await client
       .from("filialen")
-      .select("filiaal_id, filiaal_naam, stad")
+      .select("filiaal_id, filiaal_naam")
       .order("filiaal_naam", { ascending: true });
 
     if (error) {
@@ -289,6 +276,10 @@
 
     (data || []).forEach(f => {
       const label = makeFiliaalLabel(f);
+      if (!label) return;
+
+      // Als er dubbele filiaal_naam bestaat, overschrijft dit de vorige.
+      // Dan: voeg stad toe in label. (zeg maar als dit speelt)
       filiaalLabelToId.set(label, f.filiaal_id);
 
       const opt = document.createElement("option");
@@ -298,7 +289,6 @@
   }
 
   loadFilialenForRequest();
-</script>
 
   // -------------------------
   // Aanvraag opslaan in Supabase
@@ -314,11 +304,10 @@
     submitBtn.disabled = true;
 
     try {
-      const winkelNaam = (filiaalSearch.value || "").trim();
-      const winkelId = winkelNameToId.get(winkelNaam) ?? null;
+      const filiaalNaam = (filiaalSearch.value || "").trim();
+      const filiaalId = filiaalLabelToId.get(filiaalNaam) ?? null;
 
-      // Forceer keuze uit lijst (bestaand filiaal)
-      if (!winkelId) {
+      if (!filiaalId) {
         requestMsg.classList.add("err");
         requestMsg.textContent = "Kies een bestaand filiaal uit de lijst.";
         submitBtn.disabled = false;
@@ -328,13 +317,14 @@
       const email = (document.getElementById("aanvraagEmail").value || "").trim();
       const tel = (document.getElementById("aanvraagTel").value || "").trim();
 
-      // Sla op in tabel insight_requests
-      // (Zorg dat deze tabel bestaat in Supabase)
+      // ⚠️ PAS DIT AAN naar jouw echte tabelnaam:
+      const TABLE_NAME = "insignt_request";
+
       const { error } = await client
-        .from("insight_requests")
+        .from(TABLE_NAME)
         .insert([{
-          winkel_id: winkelId,
-          winkel_naam: winkelNaam,
+          filiaal_id: filiaalId,
+          filiaal_naam: filiaalNaam,
           aanvraag_email: email,
           aanvraag_tel: tel
         }]);
@@ -349,7 +339,7 @@
     } catch (err) {
       console.error("Aanvraag versturen fout:", err);
       requestMsg.classList.add("err");
-      requestMsg.textContent = "Fout bij versturen. Bestaat de tabel 'insight_requests' + RLS insert policy?";
+      requestMsg.textContent = "Fout bij versturen. Check tabelnaam + kolomnamen in Supabase.";
     } finally {
       submitBtn.disabled = false;
     }
@@ -359,12 +349,10 @@
   // Locatie / product search code
   // ----------------------------
 
-  // Locatie
   let userLat = null;
   let userLon = null;
   let locatieOpgevraagd = false;
 
-  // Debounce + request guard
   let searchDebounceTimer = null;
   let lastRequestId = 0;
 
