@@ -397,7 +397,7 @@
       const tel = (document.getElementById("aanvraagTel").value || "").trim();
 
       // ⚠️ PAS DIT AAN ALS JOUW TABEL ANDERS HEET
-      const TABLE_NAME = "insignt_request";
+      const TABLE_NAME = "insight_requests";
 
       const { error } = await client
         .from(TABLE_NAME)
