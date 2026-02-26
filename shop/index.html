@@ -1,215 +1,220 @@
 <!doctype html>
 <html lang="nl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Stock Finder — Shop</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Stock Finder — Shop</title>
 
-  <style>
-    body{
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      margin: 0;
-      background: #0b0f19;
-      color: #e8eefc;
-    }
-    .wrap{ max-width: 620px; margin: 40px auto; padding: 20px; }
-    .card{
-      background: #121a2a;
-      border: 1px solid #21304d;
-      border-radius: 14px;
-      padding: 20px;
-    }
-    h1{ margin: 0 0 10px 0; }
-    h2{ margin: 0 0 10px 0; }
-    hr{ border:0; border-top:1px solid #21304d; margin:18px 0; }
+<style>
+body{
+  font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  margin:0;
+  background:#0b0f19;
+  color:#e8eefc;
+}
+.wrap{max-width:600px;margin:40px auto;padding:20px;}
+.card{
+  background:#121a2a;
+  border:1px solid #21304d;
+  border-radius:14px;
+  padding:20px;
+}
+h1{margin:0 0 10px 0;}
+h2{margin:0 0 10px 0;}
+hr{border:0;border-top:1px solid #21304d;margin:18px 0;}
 
-    label{ display:block; margin-top: 10px; color:#a9b6d6; font-size: 13px; }
+label{display:block;margin-top:10px;color:#a9b6d6;font-size:13px;}
 
-    input{
-      width: 100%;
-      padding: 12px;
-      margin-top: 6px;
-      margin-bottom: 10px;
-      border-radius: 10px;
-      border: 1px solid #2a3a5f;
-      background: #0f1626;
-      color: white;
-      font-size: 14px;
-      box-sizing: border-box;
-    }
+input{
+  width:100%;
+  padding:12px;
+  margin-top:6px;
+  margin-bottom:10px;
+  border-radius:10px;
+  border:1px solid #2a3a5f;
+  background:#0f1626;
+  color:white;
+  font-size:14px;
+  box-sizing:border-box;
+}
 
-    button{
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      background: #ff8a00; /* oranje accent */
-      color: #0b0f19;
-      font-size: 14px;
-      cursor: pointer;
-      font-weight: 700;
-    }
-    button:disabled{ opacity:.6; cursor:not-allowed; }
+button{
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  background:#ff8a00;
+  color:#0b0f19;
+  font-size:14px;
+  cursor:pointer;
+  font-weight:700;
+}
+button:disabled{opacity:.6;cursor:not-allowed;}
 
-    .btn-secondary{
-      background:#223154;
-      color:#e8eefc;
-      font-weight: 600;
-    }
+.btn-secondary{
+  background:#223154;
+  color:#e8eefc;
+}
 
-    .muted{ color:#a9b6d6; font-size: 13px; }
-    .error{ color:#ffb4b4; margin-top:10px; }
-    .ok{ color:#a7f3b1; margin-top:10px; }
-
-    .hidden{ display:none !important; }
-  </style>
+.muted{color:#a9b6d6;font-size:13px;}
+.error{color:#ffb4b4;margin-top:10px;}
+.hidden{display:none !important;}
+</style>
 </head>
 
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1>Shop</h1>
-      <div class="muted">Alleen voor winkels met een Shop-account.</div>
+<div class="wrap">
+<div class="card">
 
-      <!-- LOGIN -->
-      <div id="loginSection">
-        <h2 style="margin-top:16px;">Inloggen</h2>
+<h1>Shop</h1>
+<div class="muted">Toegang voor winkels en admins.</div>
 
-        <label>Email</label>
-        <input id="email" type="email" placeholder="Email adres" autocomplete="email" />
+<!-- LOGIN -->
+<div id="loginSection">
+  <h2 style="margin-top:16px;">Inloggen</h2>
 
-        <label>Wachtwoord</label>
-        <input id="password" type="password" placeholder="Wachtwoord" autocomplete="current-password" />
+  <label>Email</label>
+  <input id="email" type="email" placeholder="Email adres" />
 
-        <button id="loginBtn">Inloggen</button>
-        <div id="loginMsg" class="error hidden"></div>
-      </div>
+  <label>Wachtwoord</label>
+  <input id="password" type="password" placeholder="Wachtwoord" />
 
-      <!-- DASHBOARD -->
-      <div id="shopSection" class="hidden">
-        <h2 style="margin-top:16px;">Welkom 👋</h2>
-        <div class="muted">Je bent ingelogd als:</div>
-        <strong id="userEmail"></strong>
+  <button id="loginBtn">Inloggen</button>
+  <div id="loginMsg" class="error hidden"></div>
+</div>
 
-        <hr>
+<!-- DASHBOARD -->
+<div id="shopSection" class="hidden">
+  <h2 style="margin-top:16px;">Welkom 👋</h2>
+  <div class="muted">Je bent ingelogd als:</div>
+  <strong id="userEmail"></strong>
 
-        <div id="shopInfo" class="muted">
-          Dashboard komt hier. (Volgende stap: statistieken / clicks / aanvragen)
-        </div>
+  <hr>
 
-        <hr>
-
-        <button id="logoutBtn" class="btn-secondary">Uitloggen</button>
-      </div>
-    </div>
+  <div class="muted">
+    Dashboard komt hier.  
+    (Volgende stap: route clicks / website clicks / aanvragen)
   </div>
 
-  <script type="module">
-    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  <hr>
 
-    const SUPABASE_URL = "https://xqhxvlfuariwoethorke.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxaHh2bGZ1YXJpd29ldGhvcmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MjA4OTksImV4cCI6MjA4NzA5Njg5OX0.fndfzXslGlOoyn3fomGx-6u3vAVakMGhoR87Op8tLHk";
+  <button id="logoutBtn" class="btn-secondary">Uitloggen</button>
+</div>
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+</div>
+</div>
 
-    // UI refs
-    const loginSection = document.getElementById("loginSection");
-    const shopSection = document.getElementById("shopSection");
-    const loginMsg = document.getElementById("loginMsg");
-    const userEmailEl = document.getElementById("userEmail");
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-    const loginBtn = document.getElementById("loginBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
+const SUPABASE_URL = "https://xqhxvlfuariwoethorke.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxaHh2bGZ1YXJpd29ldGhvcmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MjA4OTksImV4cCI6MjA4NzA5Njg5OX0.fndfzXslGlOoyn3fomGx-6u3vAVakMGhoR87Op8tLHk";
 
-    function showError(message) {
-      loginMsg.textContent = message;
-      loginMsg.classList.remove("hidden");
-    }
-    function clearError() {
-      loginMsg.textContent = "";
-      loginMsg.classList.add("hidden");
-    }
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    function showLogin(message = "") {
-      shopSection.classList.add("hidden");
-      loginSection.classList.remove("hidden");
-      if (message) showError(message);
-      else clearError();
-    }
+const loginSection = document.getElementById("loginSection");
+const shopSection = document.getElementById("shopSection");
+const loginMsg = document.getElementById("loginMsg");
+const userEmailEl = document.getElementById("userEmail");
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
 
-    function showShop(email) {
-      loginSection.classList.add("hidden");
-      shopSection.classList.remove("hidden");
-      userEmailEl.textContent = email;
-    }
+function showError(msg){
+  loginMsg.textContent = msg;
+  loginMsg.classList.remove("hidden");
+}
+function clearError(){
+  loginMsg.textContent = "";
+  loginMsg.classList.add("hidden");
+}
 
-    // Check role via user_roles (role = shop)
-    async function isShop(user) {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .single();
+function showLogin(message=""){
+  shopSection.classList.add("hidden");
+  loginSection.classList.remove("hidden");
+  if(message) showError(message);
+  else clearError();
+}
 
-      if (error || !data) return false;
-      return String(data.role || "").toLowerCase() === "shop";
-    }
+function showShop(email){
+  loginSection.classList.add("hidden");
+  shopSection.classList.remove("hidden");
+  userEmailEl.textContent = email;
+}
 
-    async function requireShopOrLogout() {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error || !user) {
-        showLogin();
-        return null;
-      }
+/* 🔐 ROLE CHECK
+   Shop EN Admin mogen toegang */
+async function canAccessShop(user){
+  const { data, error } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .single();
 
-      const ok = await isShop(user);
-      if (!ok) {
-        await supabase.auth.signOut();
-        showLogin("Geen toegang tot shop.");
-        return null;
-      }
+  if(error || !data) return false;
 
-      showShop(user.email);
-      return user;
-    }
+  const role = String(data.role || "").toLowerCase();
+  return role === "shop" || role === "admin";
+}
 
-    // Login click
-    loginBtn.addEventListener("click", async () => {
-      clearError();
-      loginBtn.disabled = true;
+async function requireAccess(){
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if(error || !user){
+    showLogin();
+    return null;
+  }
 
-      try {
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value;
+  const allowed = await canAccessShop(user);
+  if(!allowed){
+    await supabase.auth.signOut();
+    showLogin("Geen toegang tot shop.");
+    return null;
+  }
 
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  showShop(user.email);
+  return user;
+}
 
-        if (error) {
-          showError(error.message);
-          return;
-        }
+// LOGIN
+loginBtn.addEventListener("click", async () => {
+  clearError();
+  loginBtn.disabled = true;
 
-        const ok = await isShop(data.user);
-        if (!ok) {
-          await supabase.auth.signOut();
-          showError("Geen toegang tot shop.");
-          return;
-        }
+  try{
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
 
-        showShop(data.user.email);
-      } finally {
-        loginBtn.disabled = false;
-      }
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email, password
     });
 
-    // Logout
-    logoutBtn.addEventListener("click", async () => {
+    if(error){
+      showError(error.message);
+      return;
+    }
+
+    const allowed = await canAccessShop(data.user);
+    if(!allowed){
       await supabase.auth.signOut();
-      showLogin();
-    });
+      showError("Geen toegang tot shop.");
+      return;
+    }
 
-    // On load: if already logged in
-    await requireShopOrLogout();
-  </script>
+    showShop(data.user.email);
+
+  } finally{
+    loginBtn.disabled = false;
+  }
+});
+
+// LOGOUT
+logoutBtn.addEventListener("click", async () => {
+  await supabase.auth.signOut();
+  showLogin();
+});
+
+// CHECK SESSION ON LOAD
+await requireAccess();
+
+</script>
 </body>
 </html>
